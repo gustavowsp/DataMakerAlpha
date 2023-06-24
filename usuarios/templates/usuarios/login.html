@@ -1,0 +1,69 @@
+{%extends 'global/base.html'%}
+{% load static %}
+
+{%block 'css'%} 
+<link rel="stylesheet" href="{% static 'usuarios/register.css' %}">
+{%endblock 'css'%}
+
+{% block 'title' %}Login{% endblock 'title' %} 
+
+{% block 'body' %}
+    
+
+    <div class="container">
+
+        <div class="w-50 mx-auto p-3 text-light bg-dark">
+
+            {% if request.user.is_authenticated %}
+            
+            <div id="form-register text-center">
+                <h1 class="text-center">Você já está logado!!</h1>
+                <a href="{% url 'logout' %}" class="btn btn-outline-info btn-block">Sair</a>
+            </div>
+
+
+            {% else %}
+            <h1 class="text-center">Login</h1>
+
+            {% include  'global/partials/_message.html' %}
+
+            <div id="form-register">
+                
+                <form method="post" class="text-center" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="input-group">
+
+                        <div class="input-group-prepend">
+                            <i class="fa-solid fa-user input-group-text"></i>
+                        </div>
+
+                        <input type="text"class="form-control" name="username" placeholder="Username">
+
+                    </div>
+                    
+                 
+                    <div class="input-group">
+
+                        <div class="input-group-prepend ">
+                            <i class="fa-solid fa-envelope input-group-text"></i>
+                        </div>
+
+                        <input type="password"class="form-control" name="password" placeholder="password">
+
+                    </div>
+
+                   
+
+                    <button class="btn btn-info btn-block">Logar</button>
+                </form>
+
+            </div>
+
+            {% endif %}
+        </div>
+
+    </div>
+    
+
+{% endblock 'body' %}
+

@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500&family=Roboto:wght@100;300;400;500&display=swap');
+
+
+* {
+    font-family: Roboto;
+
+}
+p{
+    margin: 0!important;
+}
+
+
+
+
+
+
+
+
+
+  
+.product-box{
+    width: 90%;
+    margin: auto;
+}
+
+.product-image{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #bbb;
+    
+}
+.product-image img {
+    border-bottom: transparent;
+    width: 50%;
+    margin: 40px 0px;
+}
+
+
+.product-container {
+    border: 1px solid #bbb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 0px 10px ;
+    box-sizing: border-box;
+
+
+}
+.text {
+
+    margin-top: 7px;
+    font-size: 0.75em;
+}
+
+
+
+
+
+
+
+
+
+
+

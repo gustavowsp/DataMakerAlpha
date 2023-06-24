@@ -1,0 +1,10 @@
+#Caixa
+{
+    box-shadow: 12px 12px 5px 5px   rgba(0, 0, 0, 0.300);
+    transition: 1.5s;
+}
+
+
+.navbar-nav a{
+    margin-right: 10px;
+}

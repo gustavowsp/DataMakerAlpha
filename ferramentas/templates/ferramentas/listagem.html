@@ -1,0 +1,82 @@
+{%extends 'global/base.html'%}
+{% load static %}
+
+
+{% block 'title' %}Meus anúncios{% endblock 'title' %}
+
+    
+{% block 'css' %}
+    <link rel="stylesheet" href="{% static 'ferramentas/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+{% endblock 'css' %}
+
+
+
+{% block 'body' %}
+
+
+            <div class="container">
+               
+               <div class="w-50 mx-auto text-center">
+                   {% include 'global/partials/_message.html' %}
+                </div>
+               
+               
+                {% if produtos %}
+
+                <div class="row">
+
+                    {% for conta in produtos.values  %}
+                        {% for anuncio in conta.values  %}
+                        <div class="col-lg-3 col-md-4 col-6 mb-4">
+                            <div class="product-box">
+
+                                <div class="product-image">
+                                    <br>
+                                    <img src="{{anuncio.produto_img}}" alt="produto">
+                                </div>
+
+                                <div class="container-fluid">
+
+                                    <div class="product-container row">
+                                        <div class="text col-8 no-gutters">
+                                            <p>{{anuncio.seller_id}}</p>
+                                            <P>{{anuncio.titulo_produto}}</P>
+                                            <P>R${{anuncio.preco}},00</p>
+                                        </div>
+                                        
+                                        <div class="buy-button col-4">
+                                            <button class="btn btn-outline-success btn-sm">
+                                            
+                                                Ver
+                                        
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    
+
+                </div>
+
+                {% else %}
+
+                <div class="text-center mt-5">
+                    <h3 class="text-center">
+                        Você não possui anúncios, ou todas as suas contas estão inativas!
+                    </h3>
+                    <a href="{% url 'list-accounts-ml' %}" class="btn btn-primary btn-sm mt-4">Clique aqui para ir ver suas contas</a>
+                </div>
+                {% endif %}
+             
+                
+            </div>
+
+
+
+
+{% endblock 'body' %}

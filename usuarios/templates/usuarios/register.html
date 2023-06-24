@@ -1,0 +1,96 @@
+{%extends 'global/base.html'%}
+{% load static %}
+
+{%block 'css'%} 
+<link rel="stylesheet" href="{% static 'usuarios/register.css' %}">
+{%endblock 'css'%}
+
+{% block 'title' %}Registro de Usuário{% endblock 'title' %} 
+
+{% block 'body' %}
+    
+
+    <div class="container">
+
+        <div class="w-50 mx-auto p-3 text-light bg-dark">
+            <h1 class="text-center">Registro</h1>
+
+            {% include  'global/partials/_message.html' %}
+
+            <div id="form-register">
+                
+                <form method="post" class="text-center" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="input-group">
+
+                        <div class="input-group-prepend">
+                            <i class="fa-solid fa-user input-group-text"></i>
+                        </div>
+
+                        <input type="text"class="form-control" name="username" placeholder="Username">
+
+                    </div>
+                    
+                    <div class="input-group">
+
+                        <div class="input-group-prepend">
+                            <i class="fa-solid fa-user input-group-text"></i>
+                        </div>
+
+                        <input type="text"class="form-control" name="email" placeholder="Email">
+
+                    </div>
+
+                    <div class="input-group">
+
+                        <div class="input-group-prepend ">
+                            <i class="fa-solid fa-envelope input-group-text"></i>
+                        </div>
+
+                        <input type="password"class="form-control" name="password" placeholder="password">
+
+                    </div>
+                    <div class="input-group">
+
+                        <div class="input-group-prepend ">
+                            <i class="fa-solid fa-envelope input-group-text"></i>
+                        </div>
+
+                        <input type="password"class="form-control" name="re_password" placeholder="re-password">
+
+                    </div>
+
+                    <div class="input-group">
+
+                        <div class="input-group-prepend">
+                            <i class="fa-regular fa-star input-group-text"></i>
+                        </div>
+
+                        <input type="text"class="form-control" name="first_name" placeholder="Seu primeiro Nome">
+
+                    </div>
+
+                    <div class="input-group">
+
+                        <div class="input-group-prepend">
+                            <i class="fa-regular fa-star input-group-text"></i>
+                            
+                        </div>
+
+                        <input type="text"class="form-control" name="last_name" placeholder="Seu último Nome">
+
+                    </div>
+                    
+
+                    <button class="btn btn-info btn-block">Registrar</button>
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+    
+
+{% endblock 'body' %}
+

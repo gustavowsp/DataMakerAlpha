@@ -1,0 +1,48 @@
+<nav class="navbar navbar-expand-md navbar-dark bg-dark mb-5">
+
+    <!-- Logo Da Barra De Navegação -->
+    <a href="https://github.com/gustavowsp/padrao" class="navbar-brand font-weight-bold">DataMaker</a>
+
+
+    
+    <!-- Menu da Navegação Responsiva-->
+    <button class="navbar-toggler"
+     data-toggle="collapse" data-target="#Menu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Navegação -->
+    <div class="collapse navbar-collapse" id="Menu">
+        <ul class="navbar-nav ml-auto">
+
+
+            
+
+            
+            
+
+
+            {% if request.user.is_authenticated %}
+            <li class="nav-item"> 
+                <a class="nav-link" href="{% url 'listar-contas' %}">Minhas Contas</a> 
+            </li>
+            <li class="nav-item"> 
+                <a class="nav-link" href="{% url 'list' %}">Listagem</a> 
+            </li>
+            <li class="nav-item"> 
+                <a class="nav-link" href="{% url 'logout' %}">Sair</a> 
+            </li>
+            {% else %}
+            <li class="nav-item"> 
+                <a class="nav-link" href="{% url 'login' %}">Login</a> 
+            </li>
+            <li class="nav-item"> 
+                <a class="nav-link" href="{% url 'register' %}">Registrar</a> 
+            </li>
+            {% endif %}
+
+
+        </ul>
+    </div>
+
+</nav>

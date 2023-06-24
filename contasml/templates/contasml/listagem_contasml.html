@@ -1,0 +1,84 @@
+{%extends 'global/base_blank.html'%}
+{% load static %}
+{% load formatingtext %}
+
+{% block 'title' %}Minhas Contas{% endblock 'title' %} 
+
+{%block 'css'%}
+    <link rel="stylesheet" href="{% static 'contasml/listagem_contas_new.css' %}">
+    <link rel="stylesheet" href="{% static 'contasml/css.css' %}">
+{%endblock 'css'%}
+
+
+{% block 'body' %}
+
+    
+    
+      <div class="container" id="Contas">
+        <h1>Suas contas ML</h1>
+
+        {% include  'global/partials/_message.html' %}
+
+        {% for conta in contas.values  %}
+        <div class="contaml">
+          <i class="fa-solid fa-person d-md-none d-block"></i>
+
+          <h4 class="">{{conta.nome_conta}}</h4>
+          
+          <h4 class="d-md-block d-none">{{conta.id_conta}}</h4>
+          <h4 class="d-md-block d-none">{{conta.status_account|active_inative}}</h4>
+          <h4 class="d-md-block d-none">{{conta.conta_pai_ou_filha|filha_pai}}</h4>
+          <form action="{% url 'ativar-conta' %}" method="post">
+            {% csrf_token %}
+            {% if conta.status_account %}
+                <input type="text" class="d-none" name='ativar' value="False">
+                <button class="btn btn-danger btn-sm d-md-block d-none" name='id' value='{{conta.id_conta}}'>Desativar</button>
+            {% else %}
+                <input type="text" class="d-none" name='ativar' value="True">
+                <button class="btn btn-success btn-sm d-md-block d-none" name='id' value='{{conta.id_conta}}'>Ativar</button>
+            {% endif %}
+        </form>
+        {% if conta.conta_pai_ou_filha %}
+                                        
+        <form action="{% url 'transfomar-principal' %}" method="post">
+            {% csrf_token %}
+            <button class="btn btn-success btn-sm d-md-block d-none" value='{{conta.id_conta}}' name='id_conta_pai' type="submit">Mudar para Secundária</button>
+        </form>  
+         
+        {% else %}
+        
+        <form action="{% url 'transfomar-principal' %}" method="post">
+            {% csrf_token %}
+            <button class="btn btn-warning btn-sm d-md-block d-none" value='{{conta.id_conta}}' name='id_conta_filha' type="submit">Mudar para Principal</button>
+        </form>
+
+        {% endif %}
+
+        
+
+          <a href="detalheconta.html" class="btn btn-outline-success btn-sm d-md-none d-block">Ver</a>
+        </div>
+        {%endfor%}
+
+        
+
+      </div>
+
+
+{% endblock 'body' %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

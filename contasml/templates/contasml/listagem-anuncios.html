@@ -1,0 +1,63 @@
+{%extends 'global/base_blank.html'%}
+{% load static %}
+{% load formatingtext %}
+
+{% block 'title' %}Minhas Contas{% endblock 'title' %} 
+
+{%block 'css'%}
+    <link rel="stylesheet" href="{% static 'contasml/anuncios.css' %}">
+    <link rel="stylesheet" href="{% static 'contasml/css.css' %}">
+{%endblock 'css'%}
+
+
+{% block 'body' %}
+
+    
+    
+<div class="container" id="Contas">
+    <h1>Anúncios Republicar</h1>
+
+
+    {% for anuncio in produtos.values %}
+    <div class="contaml">
+      <div class="imagem-anuncio">
+        <img src="{{anuncio.produto_img}}" alt="">
+      </div>
+
+      <h4 class="">{{anuncio.titulo_produto}}</h4>
+      
+      <h4 class="d-md-block d-none">{{anuncio.id_produto}}</h4>
+
+      <button class="btn btn-sm btn-outline-info d-md-block d-none ">
+        <i class="fa-solid fa-pen"></i>
+        </button>
+
+
+      <form action="">
+
+        <th>
+            <input type="radio" value="False" name="copy">
+        </th>
+
+      </form>
+    </div>
+    {%endfor%}
+
+
+{% endblock 'body' %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
