@@ -3,10 +3,10 @@ from contasml import views
 
 
 urlpatterns = [
-    #path('ml-accounts',views.list_account, name='list-accounts-ml'),
 
     path('',views.listar_contasml, name='listar-contas' ),
-    path('meus-anuncios',views.listar_anuncios_conta_principal, name='listar-anuncios'),
+    path('autentic/', views.autentic, name='autentic'),
+    path('get_code/',views.get_code, name='get_code'),
 
     path('transformar-principal',views.transformar_em_conta_principal, name='transfomar-principal' ),
     path('ativar-conta',views.ativar_conta, name='ativar-conta' ),

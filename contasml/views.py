@@ -4,41 +4,173 @@ from django.contrib import messages
 import requests
 from django.utils import timezone as timezone_dg
 import datetime
+from ferramentas.models import  App
+from usuarios import utils as utils_user
 
 # Create your views here.
 
-def list_account(request):
-    """Essa view irá recuperar contas ML do usuário e retornar para vizualização."""
 
-    # Se user não estiver logado
-    if not request.user.is_authenticated:
-        messages.add_message(request,messages.INFO,'Você precisar esta logado antes de acessar suas contas')
-        return redirect('login')
-
-    # Pegando contas
-    contas_ml_dousuario = ContaMercado.objects.all().filter(owner=request.user)
-    
-    if not contas_ml_dousuario:
-        messages.add_message(request, messages.WARNING,'Crie uma conta mercado livre antes')
-        return redirect('autentic')
-
-    context = {
-        'contas': {}
-    }
-    for conta in contas_ml_dousuario:
-        context['contas'][conta.nome_conta] = {
-            'nome_conta'        :conta.nome_conta, 
-            'geracao_access'    :conta.time_generate_access,
-            'dono'              :conta.owner,
-            'status_account'    :conta.status_account,
-        }
+# Criando uma conta
+def autentic(request):
 
     return render(
         request,
-        'usuarios/list-accounts-ml.html',
-        context=context
+        'contasml/autentic.html'
+    )
+
+def get_code(request):
+    """
+    O mercado livre deve redirecionar o user,após sua autenticação
+    para este local, pegaremos o code e recuperaremos o AcessToken,
+    refresh token e outras informações.
+
+    O usuário não pode mexer em nada nesta página, apenas vamos pegar
+    as informações salvar e redirecionar   
+    """
+    
+    def get_access_token(code):
+        """
+        Retorna um JSON() 
+        com informações da conta.
+
+        Essa função recupera o access_token e informações importantes
+        Para a criação da conta ML
+        """
+
+        headers = {
+            'Accept': 'application/json',
+            'content-type': 'application/x-www-form-urlencoded',
+        }
+
+        # Recuperando informações da aplicação
+        app = App.objects.get(id='1')
+
+        # Montando a requisição para enviar ao servidor do mercado Livre
+        data = f'grant_type=authorization_code&client_id={app.client_id}&client_secret={app.secret_key}&code={code}&redirect_uri=https://dtmaker.vercel.app/get_code/'
+
+        # Enviando
+        response = requests.post('https://api.mercadolibre.com/oauth/token', headers=headers, data=data)
+
+        return response.json()
+
+    def retorna_access_foi_enviado(response):
+        """
+        True: Access token foi retornado
+        False: Não foi retornado
+
+        Essa função verifica se o que foi retornado é o access token
+        ou deu erro.
+        """
+        try:
+            acess_token = response['access_token']
+            return True
+        except:
+            return False
+
+    def get_name_user(access_token):
+        """
+        Essa função envia uma requisição a api do mercado livre
+        que retorna dados pessoais da conta, assim descubro o nome da conta
+        e a retorno
+        """
+
+        response = requests.get(f'https://api.mercadolibre.com/users/me?access_token={access_token}')
+        return response.json()['nickname']
+
+    def account_exists(access_token):
+        """
+        True: Conta já existe
+        False: Não existe
+
+        Verifica se já há uma conta mercado livre dessa ativa.
+        """
+
+        response = requests.get(f'https://api.mercadolibre.com/users/me?access_token={access_token}')
+        id_account = response.json()['id']
+
+        try:
+            ContaMercado.objects.get(id_conta=id_account)
+            return True
+        except:
+            return False
+
+
+
+    def ajust_data():
+        now = timezone_dg.now()
+        now = str(now)[:-7]
+
+        now =(
+                int(now[0:4]),
+                int(now[5:7])  ,
+                int(now[8:10])  ,
+                int(now[11:13]),
+                int(now[14:16]),
+                int(now[17:19])
         )
 
+    
+
+        now = (datetime.datetime(
+                int(now[0]),int(now[1]),int(now[2]),
+                int(now[3]),int(now[4]),int(now[5])
+                )
+        )
+        return now   
+    
+
+    #TODO: Salvar código no banco de dados       
+    code = request.GET.get('code')
+
+    # Se não tiver code
+    if not code:
+        messages.add_message(request,messages.INFO,'Você precisa autorizar o nosso App para que possamos criar uma conta')
+        return redirect('autentic')
+
+    # Pegando o acess_token
+    info = get_access_token(code)        
+
+    print(info)
+
+    # Verificando se access_token foi retornado, caso não erro
+    if not retorna_access_foi_enviado(info):
+        messages.add_message(request,messages.ERROR,'Tente novamente, não conseguimos autenticar')
+        return redirect('autentic')
+
+
+    # Verificando se conta ML já existe
+    if account_exists(info['access_token']):
+        account = ContaMercado.objects.get(id_conta=info['user_id'])
+
+        # Atualizando dados
+        account.access_token    =   info['access_token']
+        account.refresh_token   =   info['refresh_token']
+        account.status_account  =   True
+        account.time_generate_access = ajust_data()
+
+        account.save()
+
+        messages.add_message(request,messages.INFO,'Essa conta já foi autenticada! Atualizamos seus dados')
+        return redirect('listar-contas')
+
+    # Salvar informações da conta do mercado livre, na conta.
+    new_contaml = ContaMercado(
+        access_token = info['access_token'],
+        refresh_token = info['refresh_token'],
+        id_conta = info['user_id'],
+        nome_conta = get_name_user(info['access_token']),
+        time_generate_access = utils_user.get_time(),
+        owner = request.user
+    )
+    new_contaml.save()
+
+    # Sucesso, conta criada redirecionando para listagem
+    messages.add_message(request,messages.SUCCESS, 'Você registrou uma conta!')
+    return redirect('listar-contas')
+
+
+
+# Renovando o access_token
 def refresh_token(request):
     
     def ajust_data():
@@ -130,11 +262,10 @@ def listar_contasml(request):
 
     return render(
         request,
-        'usuarios/listagem_contasml.html',
+        'contasml/listagem_contasml.html',
         context
     )
 
-# Mudando o tipo de conta de secundária para principal, ou ao ocntrário
 def transformar_em_conta_principal(request):
     
     if not request.user.is_authenticated:
@@ -165,7 +296,6 @@ def transformar_em_conta_principal(request):
 
     return redirect('listar-contas')
 
-# Mudando o status da conta.
 def ativar_conta(request):
     
     if not request.user.is_authenticated:
@@ -199,76 +329,4 @@ def ativar_conta(request):
     return redirect('listar-contas')
 
 
-
-def listar_anuncios_conta_principal(request):
-    
-    def get_products_ids(id_acount, access_token):
-
-        """
-        Essa função retorna uma LISTA de IDS de anúncios da conta do mercado livre.
-        """
-
-        response = requests.get(f'https://api.mercadolibre.com/users/{id_acount}/items/search?access_token={access_token}')
-        response = response.json()
-
-        # Pegando o id dos anúncios -- Retorna uma lista
-        id_anuncios = response['results']
-        return id_anuncios,access_token
-
-    def get_products(id_produto, access_token):
-        
-        """
-        Essa função retorna um dicionário com informações do produto
-        """
-
-        produtos = {}
-
-        for id_p in id_produto:
-            response = requests.get(f'https://api.mercadolibre.com/items/{id_p}?access_token={access_token}')
-            response = response.json()
-            
-            produtos[response['id']] =  response
-
-        return produtos
-
-
-
-    if not request.user.is_authenticated:
-        messages.add_message(request,messages.INFO,'Autentique-se primeiro!')
-        return redirect('login')
-
-    # Pegando a conta principal
-    try:
-        conta_principal = ContaMercado.objects.get(conta_pai_ou_filha=True)
-    except:
-        messages.add_message(request, messages.INFO, "Selecione uma conta principal primeiro")
-        return redirect('listar-contas')
-    
-    #TODO: Verificar se o access token está ativo.
-    id_conta = conta_principal.id_conta
-    access_token =  conta_principal.access_token
-
-    id_anuncios = get_products_ids(id_conta,access_token)
-
-    produtos = get_products(id_anuncios[0],access_token)
-    
-    context = {
-        'produtos' : {}
-    }
-
-            #Adicionando no dicinário.
-    for produto in produtos.values():
-        context['produtos'][produto['id']] = {
-                    'id_produto' : produto['id'],
-                    'titulo_produto' : produto['title'],
-                    'tags_produtos' :produto['tags'],
-                    'seller_id' : produto['seller_id'],
-                    'preco' : produto['price'],
-                    'qtd_vendida' :produto['sold_quantity'],
-                    'produto_img': produto['thumbnail']
-                }
-
-
-
-
-    return render(request, 'usuarios/listagem-anuncios.html',context)
+# Listagem de anúncios

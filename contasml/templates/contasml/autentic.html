@@ -1,0 +1,42 @@
+{%extends 'global/base_blank.html'%}
+{% load static %}
+{% load formatingtext %}
+
+{% block 'title' %}Minhas Contas{% endblock 'title' %} 
+
+{%block 'css'%}
+    <link rel="stylesheet" href="{% static 'contasml/listagem_contas_new.css' %}">
+    <link rel="stylesheet" href="{% static 'global/listagem/css.css' %}">
+{%endblock 'css'%}
+
+
+{% block 'body' %}
+
+    
+        
+    <div class="container text-center">    
+        <h1 class="display-4 mb-1">Registre uma conta Mercado Livre</h1>
+        <p class="text-monospace mb-5">Para registrar uma nova conta mercado Livre, basta clicar no
+            botão abaixo!   
+        </p>
+        <a href="https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=3390239955200836&redirect_uri=https://dtmaker.vercel.app/get_code/
+        " class="btn btn-primary btn-lg">Registrar uma nova conta</a>
+    </div>
+
+{% endblock 'body' %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
