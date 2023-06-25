@@ -3,7 +3,7 @@ from contasml.models import ContaMercado
 from django.contrib import messages
 import requests
 from django.utils import timezone as timezone_dg
-import datetime
+from datetime import datetime
 from ferramentas.models import  App
 from usuarios import utils as utils_user
 
@@ -94,8 +94,6 @@ def get_code(request):
         except:
             return False
 
-
-
     def ajust_data():
         now = timezone_dg.now()
         now = str(now)[:-7]
@@ -130,8 +128,6 @@ def get_code(request):
     # Pegando o acess_token
     info = get_access_token(code)        
 
-    print(info)
-
     # Verificando se access_token foi retornado, caso não erro
     if not retorna_access_foi_enviado(info):
         messages.add_message(request,messages.ERROR,'Tente novamente, não conseguimos autenticar')
@@ -159,7 +155,7 @@ def get_code(request):
         refresh_token = info['refresh_token'],
         id_conta = info['user_id'],
         nome_conta = get_name_user(info['access_token']),
-        time_generate_access = utils_user.get_time(),
+        time_generate_access = datetime.now(),
         owner = request.user
     )
     new_contaml.save()
@@ -171,7 +167,7 @@ def get_code(request):
 
 
 # Renovando o access_token
-def refresh_token(request):
+"""def refresh_token(request):
     
     def ajust_data():
         now = timezone_dg.now()
@@ -233,7 +229,7 @@ def refresh_token(request):
             conta.save()
 
     messages.add_message(request,messages.SUCCESS, "Todas as contas estão ativas novamente")
-    return redirect('list')
+    return redirect('list')"""
 
 
 
@@ -252,6 +248,12 @@ def listar_contasml(request):
     }
 
     for conta in contas_mercadol:
+
+        if conta.access_token_inativo:
+            print('Está inativo')
+        else:
+            print('Está ativo')
+
         context['contas'][conta.nome_conta] = {
             'nome_conta'            :conta.nome_conta, 
             'id_conta'              :conta.id_conta, 

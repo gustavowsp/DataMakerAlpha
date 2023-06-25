@@ -11,5 +11,5 @@ urlpatterns = [
     path('transformar-principal',views.transformar_em_conta_principal, name='transfomar-principal' ),
     path('ativar-conta',views.ativar_conta, name='ativar-conta' ),
     
-    path('refresh',views.refresh_token, name='refresh'),
+    #path('refresh',views.refresh_token, name='refresh'),
 ]
