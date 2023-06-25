@@ -5,7 +5,7 @@ import requests
 from django.utils import timezone as timezone_dg
 from datetime import datetime
 from ferramentas.models import  App
-from usuarios import utils as utils_user
+from django.http import HttpResponse
 
 # Create your views here.
 
@@ -119,6 +119,8 @@ def get_code(request):
 
     #TODO: Salvar código no banco de dados       
     code = request.GET.get('code')
+
+    return HttpResponse(code)
 
     # Se não tiver code
     if not code:
