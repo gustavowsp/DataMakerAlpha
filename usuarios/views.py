@@ -181,7 +181,7 @@ def logar(request):
         # Se o usuário estiver correto vou loga-lo
         if usuario_object:
             login(request,usuario_object)
-            return redirect('list')
+            return redirect('listar-contas')
         else:
             messages.add_message(request,messages.ERROR,'Esse usuário não existe, ou você errou sua senha.')
             return render(request,'usuarios/login.html')

@@ -2,8 +2,7 @@ from django.shortcuts import render,redirect
 from contasml.models import ContaMercado
 from django.contrib import messages
 import requests
-from django.utils import timezone as timezone_dg
-from datetime import datetime
+from django.utils import timezone
 from ferramentas.models import  App
 from django.http import HttpResponse
 
@@ -46,7 +45,7 @@ def get_code(request):
         app = App.objects.get(id='1')
 
         # Montando a requisição para enviar ao servidor do mercado Livre
-        data = f'grant_type=authorization_code&client_id={app.client_id}&client_secret={app.secret_key}&code={code}&redirect_uri=https://dtmaker.vercel.app/get_code/'
+        data = f'grant_type=authorization_code&client_id={app.client_id}&client_secret={app.secret_key}&code={code}&redirect_uri=https://dtmaker.vercel.app/mercadolivre/get_code/'
 
         # Enviando
         response = requests.post('https://api.mercadolibre.com/oauth/token', headers=headers, data=data)
@@ -94,33 +93,10 @@ def get_code(request):
         except:
             return False
 
-    def ajust_data():
-        now = timezone_dg.now()
-        now = str(now)[:-7]
-
-        now =(
-                int(now[0:4]),
-                int(now[5:7])  ,
-                int(now[8:10])  ,
-                int(now[11:13]),
-                int(now[14:16]),
-                int(now[17:19])
-        )
-
-    
-
-        now = (datetime.datetime(
-                int(now[0]),int(now[1]),int(now[2]),
-                int(now[3]),int(now[4]),int(now[5])
-                )
-        )
-        return now   
-    
 
     #TODO: Salvar código no banco de dados       
     code = request.GET.get('code')
 
-    return HttpResponse(code)
 
     # Se não tiver code
     if not code:
@@ -129,12 +105,12 @@ def get_code(request):
 
     # Pegando o acess_token
     info = get_access_token(code)        
-
+    print(info['refresh_token'])
+    
     # Verificando se access_token foi retornado, caso não erro
     if not retorna_access_foi_enviado(info):
         messages.add_message(request,messages.ERROR,'Tente novamente, não conseguimos autenticar')
         return redirect('autentic')
-
 
     # Verificando se conta ML já existe
     if account_exists(info['access_token']):
@@ -144,7 +120,7 @@ def get_code(request):
         account.access_token    =   info['access_token']
         account.refresh_token   =   info['refresh_token']
         account.status_account  =   True
-        account.time_generate_access = ajust_data()
+        account.time_generate_access = timezone.now()
 
         account.save()
 
@@ -157,7 +133,7 @@ def get_code(request):
         refresh_token = info['refresh_token'],
         id_conta = info['user_id'],
         nome_conta = get_name_user(info['access_token']),
-        time_generate_access = datetime.now(),
+        time_generate_access = timezone.now(),
         owner = request.user
     )
     new_contaml.save()
@@ -165,74 +141,6 @@ def get_code(request):
     # Sucesso, conta criada redirecionando para listagem
     messages.add_message(request,messages.SUCCESS, 'Você registrou uma conta!')
     return redirect('listar-contas')
-
-
-
-# Renovando o access_token
-"""def refresh_token(request):
-    
-    def ajust_data():
-        now = timezone_dg.now()
-        now = str(now)[:-7]
-
-        now =(
-                int(now[0:4]),
-                int(now[5:7])  ,
-                int(now[8:10])  ,
-                int(now[11:13]),
-                int(now[14:16]),
-                int(now[17:19])
-        )
-
-    
-
-        now = (datetime.datetime(
-                int(now[0]),int(now[1]),int(now[2]),
-                int(now[3]),int(now[4]),int(now[5])
-                )
-        )
-        return now   
-
-    # Caso o usuário não esteja logado vamos redireciona-lo
-    if not request.user.is_authenticated:
-        messages.add_message(request,messages.INFO,'Você precisar esta logado antes de ativar suas contas')
-        return redirect('login')
-
-    # Pegando informações da aplicação
-    aplicacao = App.objects.get(id=1)
-    info_app =  {
-        'id': aplicacao.client_id,
-        'secret': aplicacao.secret_key
-    }
-
-    # Pegando contas ML
-    contas_ml = ContaMercado.objects.all().filter(owner=request.user)
-    
-    # Acessando todas as contas inativas e pegando um novo access_token
-    for conta in contas_ml:
-        if conta.status_account == False:
-            
-            refresh = conta.refresh_token
-            headers = {
-                'accept': 'application/json',
-                'content-type': 'application/x-www-form-urlencoded',
-            }
-
-            data = f'grant_type=refresh_token&client_id={info_app["id"]}&client_secret={info_app["secret"]}&refresh_token={refresh}'
-
-            response = requests.post('https://api.mercadolibre.com/oauth/token', headers=headers, data=data)
-            response = response.json()
-
-            # Atualizando dados da conta
-            conta.refresh_token = response['refresh_token']
-            conta.access_token = response['access_token']
-            conta.time_generate_access = ajust_data()
-            conta.status_account = True
-            conta.save()
-
-    messages.add_message(request,messages.SUCCESS, "Todas as contas estão ativas novamente")
-    return redirect('list')"""
-
 
 
 
@@ -250,11 +158,9 @@ def listar_contasml(request):
     }
 
     for conta in contas_mercadol:
-
-        if conta.access_token_inativo:
-            print('Está inativo')
-        else:
-            print('Está ativo')
+        
+        if conta.access_token_inativo():
+            conta.trocar_access_token()
 
         context['contas'][conta.nome_conta] = {
             'nome_conta'            :conta.nome_conta, 

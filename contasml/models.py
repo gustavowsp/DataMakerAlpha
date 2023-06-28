@@ -2,20 +2,23 @@ from django.db import models
 import requests
 from django.contrib.auth.models import User
 from ferramentas.models import App
-from datetime import datetime
+from django.utils import timezone
 
 
 # Create your models here.
 class ContaMercado(models.Model):
+    
     access_token        = models.CharField(max_length=255)
+    
     refresh_token       = models.CharField(max_length=255)
+    
     id_conta            =  models.IntegerField()
     nome_conta          =   models.CharField(
         max_length      =   255, 
         verbose_name    =   'Nome da conta'
     )
     time_generate_access= models.DateTimeField(
-        default         =   datetime.now,
+        default         =   timezone.now,
         verbose_name    =   'Geração Access Token')    
     owner = models.ForeignKey(
         User, 
@@ -47,7 +50,7 @@ class ContaMercado(models.Model):
         return f'{self.nome_conta} - {self.owner}'
 
 
-    def refresh_token(self):
+    def trocar_access_token(self):
 
         app = App.objects.get(id=1)
         info_app = {
@@ -67,7 +70,7 @@ class ContaMercado(models.Model):
         # Atualizando dados da conta
         self.refresh_token = response['refresh_token']
         self.access_token = response['access_token']
-        self.time_generate_access = datetime.now()
+        self.time_generate_access = timezone.now()
         self.status_account = True
         self.save()
             
@@ -75,15 +78,21 @@ class ContaMercado(models.Model):
     def access_token_inativo(self):
         
         # Diferenca entre o horário atual e o horário que o token foi gerado
-        diferenca = datetime.now()-self.time_generate_access
-        print(f'Diferença {diferenca}')
-        try:
-            horas_passadas_geracao_token =  str(diferenca)[0:1]
-            print(f'Diferença horas: {horas_passadas_geracao_token}')
-            if horas_passadas_geracao_token >=5:
-                return True
-        except:
-            print('Deu pau')
+        diferenca = timezone.now()-self.time_generate_access
+        
+        if len(str(diferenca)) > 14:
             return True
-        print('Tá inativo não')
+    
+        try:
+            horas_passadas_geracao_token =  str(diferenca)[0:2]
+            
+            if ':' in horas_passadas_geracao_token:
+                horas_passadas_geracao_token = horas_passadas_geracao_token.replace(':','')
+                        
+            if int(horas_passadas_geracao_token) >=5:
+                return True
+            
+        except:
+            return True
+
         return False

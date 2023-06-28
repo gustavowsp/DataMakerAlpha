@@ -52,7 +52,8 @@ def listar_anuncios_conta_principal(request):
         messages.add_message(request, messages.INFO, "Selecione uma conta principal primeiro")
         return redirect('listar-contas')
     
-    #TODO: Verificar se o access token está ativo.
+    if conta_principal.access_token_inativo():
+            conta_principal.trocar_access_token()
     id_conta = conta_principal.id_conta
     access_token =  conta_principal.access_token
 
