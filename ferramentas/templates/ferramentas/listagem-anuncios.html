@@ -20,6 +20,7 @@
 
     {% if produtos %}
       <h1>Anúncios Republicar</h1>
+      {% include  'global/partials/_message.html' %}
       {% for anuncio in produtos.values %}
       <div class="contaml">
 

@@ -185,8 +185,8 @@ def publicar_anuncios(request):
 
         
 
-
-    return HttpResponse(json)
+    messages.add_message(request,messages.SUCCESS, "Seus anúncios foram publicados!")
+    return redirect('listar-anuncios')
 
 
 
