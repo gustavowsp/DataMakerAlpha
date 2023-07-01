@@ -11,7 +11,10 @@ from django.http import HttpResponse
 
 # Criando uma conta
 def autentic(request):
-
+    if not request.user.is_authenticated:
+        messages.add_message(request,messages.INFO,'Autentique-se primeiro!')
+        return redirect('login')
+   
     return render(
         request,
         'contasml/autentic.html'

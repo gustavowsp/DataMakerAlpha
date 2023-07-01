@@ -135,8 +135,8 @@ def publicar_anuncios(request):
         attributes = crie_atributos_produtos(info_anuncio)
         sales_terms = crie_saleterms(info_anuncio)
         data = {
-        #"title"                 :   f'{anuncio["title"]}',
-        "title"                 :   'TESTEEEEE COLORIDO COR ROSA MEU AMOR',
+        "title"                 :   f'{anuncio["title"]}',
+        #"title"                 :   'TESTEEEEE COLORIDO COR ROSA MEU AMOR',
         "category_id"           :   info_anuncio.get('category_id'),
         "price"                 :   f'{anuncio["price"]}',
         "currency_id"           :   "BRL",
