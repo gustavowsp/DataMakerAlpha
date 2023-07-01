@@ -105,7 +105,6 @@ def get_code(request):
 
     # Pegando o acess_token
     info = get_access_token(code)        
-    print(info['refresh_token'])
     
     # Verificando se access_token foi retornado, caso não erro
     if not retorna_access_foi_enviado(info):
