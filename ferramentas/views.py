@@ -5,6 +5,7 @@ from django.contrib import messages
 from contasml.models import ContaMercado
 import json
 
+
 # TODO: Retornar apenas as contas que o usuário é dono para vizualização. Atualmente estamos retornando todas
 
 
@@ -438,6 +439,126 @@ def analisador_anuncios(request):
     return render(request, 'ferramentas/analiseanuncios.html',context)
 
 def melhores_palavras(request):
-     return HttpResponse('Melhores palavras')    
+
+
+    usuario_logado = request.user.is_authenticated
+    if not usuario_logado:
+        messages.add_message(request,messages.WARNING,'É necessário estar logado para acessar aquela página')
+        return redirect('login')
+    
+    if request.method == 'GET':
+        return render(request,'ferramentas/melhorespalavras.html')    
+    
+    nome_anuncio = request.POST.get('nome_anuncio')
+    
+    if not nome_anuncio:
+        messages.add_message(request,messages.WARNING,'É necessário preencher o campo acima')
+        return render(request,'ferramentas/melhorespalavras.html')    
+    
+    anuncios = list()
+    offsets = 0
+
+    # Pegando os anúncios das cinco primeiras páginas
+    for vez in range(0,5):
+        response = requests.get(f'https://api.mercadolibre.com/sites/MLB/search?q={nome_anuncio}&offset={offsets}').json()
+        
+        # Pegando o resultado do JSON response. O result são os anúncios, resultados da busca.
+        result = response['results']
+        anuncios.append(result)
+        
+        # Ignorando mais ciquenta anúncios
+        offsets += 50
+
+    palavras = set()
+    palavras_com_metricas = list()
+
+    # Iterando os resultados de busca contidos na lista de anuncios
+    for result in anuncios:
+
+        # Iterando os anuncios do resultado da busca
+        for anuncio in result:
+
+            # Pegando informações do anúncio
+            nome_produto    =   anuncio['title']
+            vendas_produto  =   anuncio['sold_quantity']
+
+            nome_produto = nome_produto.split()
+            
+            for nome in nome_produto:
+
+                # Essa tupla contêm a palavra e a quantidade que essa palavra vendeu
+                metricas_palavra = (nome,vendas_produto)
+                palavras_com_metricas.append(metricas_palavra)
+                palavras.add(nome)
+
+    # Dicionário que vai conter quantidade de repetições de cada palavra com seu total de vendas
+    palavras_repeticao = dict()
+
+    # Criando as chaves de cada palavra para inserirmos um valor
+    for palavra in palavras:
+        palavras_repeticao[palavra] = {
+            'repeticao' : 0,
+            'vendas' : 0,
+            'palavra' : palavra
+        }
+    
+    # Inserindo valores no dicionário
+    for item in palavras_com_metricas:
+
+        palavra         = item[0] # Pegando a palavra
+        vendas_palavra  = item[1] # Pegando as vendas que essa palavra possui
+
+        # Acessando valores atuais da palavra
+        repeticao = palavras_repeticao[palavra]['repeticao']
+        vendas = palavras_repeticao[palavra]['vendas']
+
+        # Adicionando novos valores na palavra
+        palavras_repeticao[palavra]['repeticao'] = repeticao + 1
+        palavras_repeticao[palavra]['vendas'] = vendas + vendas_palavra
+
+    palavras_ordenadas = list()
+
+    # Ordenando os anúncios
+    for palavra in palavras_repeticao.values():
+
+        # Lista vazia?
+        if len(palavras_ordenadas) == 0:
+            palavras_ordenadas.append(palavra)
+            continue
+        local_list = 0
+
+        for palavra_ordenada in palavras_ordenadas:
+            # Informações do anuncio ('repeticoes' :0, 'vendas':0, palavra: 'palavra')
+            repeticoes = palavra_ordenada['repeticao']
+
+            # Repetições da palavra atual, da variável palavra.
+            repeticoes_palavra_atual = palavra['repeticao']
+
+            # Se o total de repetições dessa palavra que está na localização X da lista ordenada for menor ou igual à palavra atual
+            # Inserimos a palavra atual na posição que ela possuia.
+
+            if repeticoes <= repeticoes_palavra_atual:
+                palavras_ordenadas.insert(local_list,palavra)
+                local_list = -1
+                break
+            local_list += 1
+
+        if local_list != -1:
+            palavras_ordenadas.append(palavra)
+        
+    palavras_ordenadas_final = list()
+
+    print(type(palavras_ordenadas))
+    for local in range(0,len(palavras_ordenadas)):
+        if local == 50:
+            break
+        palavras_ordenadas_final.append(palavras_ordenadas[local])
+
+    context = {
+        'anuncios' : palavras_ordenadas_final
+    }
+        
+            
+    return render(request,'ferramentas/melhorespalavras.html',context)    
 
 
