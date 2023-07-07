@@ -437,7 +437,7 @@ def analisador_anuncios(request):
     
     return render(request, 'ferramentas/analiseanuncios.html',context)
 
-# def melhores_palavras(request):
-#     return HttpResponse('Melhores palavras')    
+def melhores_palavras(request):
+     return HttpResponse('Melhores palavras')    
 
 
