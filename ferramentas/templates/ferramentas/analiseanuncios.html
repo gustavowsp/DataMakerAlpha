@@ -1,0 +1,135 @@
+{%extends 'global/base_blank.html'%}
+{% load static %}
+{% load formatingtext %}
+
+{% block 'title' %}Analise de anúncios{% endblock 'title' %} 
+
+{%block 'css'%}
+    <link rel="stylesheet" href="{% static 'ferramentas/buscador.css' %}">
+    <link rel="stylesheet" href="{% static 'global/listagem/css.css' %}">
+
+{%endblock 'css'%}
+
+
+{% block 'body' %}
+
+    
+<div class="container-fluid  h-100">
+
+  <div id="buscador" >
+      <form method="post" class="w-50 mx-auto text-center">
+        {% csrf_token %}
+          <input type="text" placeholder="Busque seu anúncio" class="form-control" name="anuncio">
+          <button class="btn btn-success btn-sm  mt-3 ">Buscar</button>
+      </form>
+      {% include  'global/partials/_message.html' %}
+
+  </div>
+
+  {% if anuncios %}
+  <div class="row h-100">
+
+      <div class="col-3 h-100">
+
+          <div class="row h-100">
+
+            {% for conta in contas.values  %}
+              <div class="col-12 contabox">
+                  <h3 class="h5">{{conta.nome}}</h3>
+                  <div class="informacoes">
+                      <div class="esquerda">
+
+                          <div class="bloco-informacao">
+                              <h6>Vendas</h6>
+                              <span class="informacao">Conclúidas {{conta.vendas_feitas}}</span>
+                              <span class="informacao">Canceladas {{conta.vendas_canceladas}}</span>
+                              <span class="informacao">Total {{conta.vendas}}</span>
+                          </div>
+                          <div class="bloco-informacao">
+                              <h6>Localização</h6>
+                              <span class="informacao">{{conta.localizacao}}</span>
+                          </div>
+         
+                      </div>
+
+                      <div class="direita">
+                          <div class="bloco-informacao">
+                              <h6>Últimos 60 dias</h6>
+                              <span class="informacao">Vendas {{conta.vendas_60d}} </span>
+                              <span class="informacao">Retorno {{conta.reinvidicacoes_60d}}</span>
+                              <span class="informacao">Atrasos {{conta.atrasos_60d}}</span>
+                          </div>
+                          <div class="bloco-informacao">
+                              <h6>Anúncios</h6>
+                              <span class="informacao">Total<   /span>
+                              <span class="informacao">No full</span>
+                              <span class="informacao">Frete grátis</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            {% endfor %}
+          </div>
+
+      </div>
+      <div class="col-9 h-100 ">
+          
+          <div class="row h-100">
+
+
+            {% for anuncio in anuncios.values  %}
+              <div class="col-4 anunciobox">
+                  <div class="anuncio">
+                      <div class="anuncio-img">
+                        <img src="{{anuncio.foto}}" alt="">
+                      </div>
+                      <h6 class="text-center">{{anuncio.titulo_produto}}</h6>
+                      <div class="informacoes">
+                          <div class="esquerda">
+                              <span class="informacao">Vendedor: {{anuncio.nome_vendedor}}</span>
+                              <span class="informacao">Marca: {{anuncio.marca}}</span>
+                              <span class="informacao">Comissao: 67%</span>
+                              <span class="informacao">Criacao: 2023/06/28</span>
+                          </div>
+                          <div class="direita">
+                              <span class="informacao">Localização: {{anuncio.localizacao}}</span>
+                              <span class="informacao">Vendas: {{anuncio.vendas}}</span>
+                              <span class="informacao">Qualidade: 70%</span>
+                              <span class="informacao">Reputação: {{anuncio.reputacao}}</span>
+                          </div>
+                          <div class="clear"></div>
+                      </div>
+                  </div>
+              </div>
+              {% endfor %}
+              
+             
+          </div>
+
+      </div>
+
+  </div>
+  {% else %}
+  <h2 class="text-center">Pesquise algo!</h2>
+  {% endif %}
+
+</div>
+
+
+{% endblock 'body' %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
