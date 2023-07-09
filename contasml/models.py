@@ -1,8 +1,19 @@
 from django.db import models
 import requests
 from django.contrib.auth.models import User
-from ferramentas.models import App
+#from ferramentas.models import App
 from django.utils import timezone
+
+
+class App(models.Model):
+
+    nome = models.CharField(max_length=255)
+    desc = models.TextField()
+    client_id = models.CharField(max_length=255)
+    secret_key = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return self.nome
 
 
 # Create your models here.

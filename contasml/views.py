@@ -3,7 +3,7 @@ from contasml.models import ContaMercado
 from django.contrib import messages
 import requests
 from django.utils import timezone
-from ferramentas.models import  App
+from contasml.models import App
 from django.http import HttpResponse
 
 # Create your views here.
@@ -153,7 +153,12 @@ def listar_contasml(request):
         messages.add_message(request,messages.INFO,'Autentique-se primeiro!')
         return redirect('login')
    
+    
     contas_mercadol = ContaMercado.objects.all().filter(owner=request.user)
+
+    if not contas_mercadol:
+        messages.add_message(request,messages.INFO,'Autentique sua conta primeiro!')
+        return redirect('autentic')
 
     context = {
         'contas': {}

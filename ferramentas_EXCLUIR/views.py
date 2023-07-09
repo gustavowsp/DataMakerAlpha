@@ -35,14 +35,14 @@ def get_products(ids_produto : int | list, access_token: str):
 # views
 def index(request):
     return render(request,'ferramentas/index.html')
-
+"""
 def listar_anuncios_conta_principal(request):
 
     def get_products_ids(id_acount, access_token):
 
-        """
+        ""
         Essa função retorna uma LISTA de IDS de anúncios da conta do mercado livre.
-        """
+        ""
 
         response = requests.get(f'https://api.mercadolibre.com/users/{id_acount}/items/search?access_token={access_token}')
         response = response.json()
@@ -316,7 +316,8 @@ def publicar_anuncios(request):
         messages.add_message(request,messages.SUCCESS, "Seus anúncios foram publicados!")
         return redirect('listar-anuncios')
     return redirect('listar-anuncios')
-
+"""
+"""
 def analisador_anuncios(request):
 
     usuario_nao_logado = False if request.user.is_authenticated else True
@@ -395,7 +396,7 @@ def analisador_anuncios(request):
         anuncios.append(anuncio_informacoes)
     
     #conta_anuncios = list()
-    """for id in id_conta_anuncios:
+    -""for id in id_conta_anuncios:
         info_conta = requests.get(f'https://api.mercadolibre.com/users/{id}').json()
 
 
@@ -415,7 +416,7 @@ def analisador_anuncios(request):
         }
         
         conta_anuncios.append(info_conta)
-    """
+    -""
 
     context = {}
     context['anuncios'] ={
@@ -562,4 +563,4 @@ def melhores_palavras(request):
             
     return render(request,'ferramentas/melhorespalavras.html',context)    
 
-
+"""

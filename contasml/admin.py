@@ -13,3 +13,12 @@ class ContaMercadoAdmin(admin.ModelAdmin):
     search_fields = ['nome_conta','owner']
 
     ordering = 'time_generate_access',
+
+
+
+# Register your models here.
+@admin.register(models.App)
+class AppAdmin(admin.ModelAdmin):
+    list_display = ['id','nome']
+    search_fields = ['nome','desc']
+    ordering = '-id',

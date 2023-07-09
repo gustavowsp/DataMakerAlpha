@@ -1,0 +1,55 @@
+
+
+#buscador{
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
+.anuncio{
+    width: 98%;
+    margin: auto;
+    background-color: royalblue;
+    height: 300px;
+    margin-bottom: 20px;
+}
+.anuncio .anuncio-img{
+height: 100px;
+border-bottom: 1px solid gray;
+margin-bottom: 5px;
+overflow: hidden;
+}
+
+
+.informacoes{
+    font-size: 0.85em;
+}
+.informacoes span{
+    display: block;
+    margin-bottom: 10px;
+}
+.informacoes .esquerda{
+    float: left;
+    width: 50%;
+}
+.informacoes .direita{
+    float:  left;
+    width: 50%;
+
+}
+.bloco-informacao{
+    margin-top: 30px;
+}
+.bloco-informacao span{
+    margin-bottom: 2px;
+}
+.clear  {
+    clear: both;
+}
+
+
+.contabox{
+    background-color: green;
+    height: 300px;
+    margin-bottom: 20px;
+
+}

@@ -41,9 +41,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Meus apps
-    'ferramentas.apps.FerramentasConfig',
+    #'ferramentas.apps.FerramentasConfig',
+    'AnaliseAnuncios.apps.AnaliseanunciosConfig',
+    'GerenciamentoAnuncios.apps.GerenciamentoanunciosConfig',
     'usuarios.apps.UsuariosConfig',
-    'contasml',
+    'contasml.apps.ContasmlConfig',
     
 ]
 
