@@ -541,6 +541,7 @@ def melhores_palavras(request):
                 palavras_ordenadas.insert(local_list,palavra)
                 local_list = -1
                 break
+            
             local_list += 1
 
         if local_list != -1:
