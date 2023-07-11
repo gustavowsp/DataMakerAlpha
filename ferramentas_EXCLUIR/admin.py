@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ferramentas.models import App
+from ferramentas_EXCLUIR.models import App
 
 # Register your models here.
 @admin.register(App)

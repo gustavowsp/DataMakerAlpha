@@ -58,7 +58,6 @@ def listar_anuncios_conta_principal(request):
         messages.add_message(request, messages.INFO, "Selecione uma conta principal primeiro")
         return redirect('listar-contas')
     
-
     if conta_principal.access_token_inativo():
             conta_principal.trocar_access_token()
 
@@ -101,7 +100,14 @@ def publicar_anuncios(request):
         return redirect('login')
 
     if request.method == 'POST':
+        
+        # Pegando informações dos anúncios contidas no JSON
         json_texto = request.POST.get('json')
+        
+        if not json_texto:
+            return redirect('listar-anuncios')
+            
+
         json_object = json.loads(json_texto)
         conta_principal = ContaMercado.objects.get(conta_pai_ou_filha=True,owner=request.user)
 
