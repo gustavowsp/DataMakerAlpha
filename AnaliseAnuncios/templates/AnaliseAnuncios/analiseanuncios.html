@@ -6,9 +6,8 @@
 
 {%block 'css'%}
     
-    {% for caminho in caminho_css  %}
-        <link rel="stylesheet" href="{% static  'AnaliseAnuncios/buscador.css'  %}">
-    {% endfor %}
+<link rel="stylesheet" href="{% static  'AnaliseAnuncios/buscador.css'  %}">
+
 
     <link rel="stylesheet" href="{% static 'global/listagem/css.css' %}">
 
@@ -40,6 +39,7 @@
           <div class="row h-100">
 
             {% for conta in contas.values  %}
+
               <div class="col-12 contabox">
                   <h3 class="h5">{{conta.nome}}</h3>
                   <div class="informacoes">
@@ -74,6 +74,7 @@
                       </div>
                   </div>
               </div>
+
             {% endfor %}
           </div>
 
@@ -89,7 +90,11 @@
                       <div class="anuncio-img">
                         <img src="{{anuncio.foto}}" alt="">
                       </div>
-                      <h6 class="text-center">{{anuncio.titulo_produto}}</h6>
+                      
+                      <a href="{% url 'analisador-anuncio-unico' anuncio.id_anuncio%}">
+                          <h6 class="text-center">{{anuncio.titulo_produto}}</h6>
+                    </a>
+
                       <div class="informacoes">
                           <div class="esquerda">
                               <span class="informacao">Vendedor: {{anuncio.nome_vendedor}}</span>

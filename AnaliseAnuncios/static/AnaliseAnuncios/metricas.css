@@ -1,0 +1,59 @@
+#DashBoard{
+    display: flex;
+    justify-content: space-evenly;
+    padding: 20px 20px;
+}
+#DashBoard .row{
+    margin-bottom: 40px;
+}
+#DashBoard .col-4 .dash{
+    height: 340px;
+    background-color: #F4F4F4;
+    box-shadow: 5px 2px 4px 2px rgba(0,0,0,10%);
+    margin: 0px 0px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+#DashBoard  #DashHeightFull .dash{
+    height: 700px;
+
+}
+.dash h3{
+    font-size: 1.4em;
+    text-align: center;
+}
+
+#links a{
+    margin-bottom: 10px !important;
+    font-size: 0.8em;
+    display: block;
+}
+
+.medalha{
+    padding: 10px 0px;
+    position: relative;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    text-indent: 5px;
+}
+.medalha::after{
+    content: '';
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    top: 0;
+    position: absolute;
+    display: block;
+    background-color: #6cb9d33d ;
+    width: 0%;
+    transition: 0.5s;
+}
+.medalha:hover::after{
+    width: 75%;
+
+}
+.medalha{
+    text-transform: capitalize;
+    border-bottom: 1px solid gray;
+}

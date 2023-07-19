@@ -1,0 +1,13 @@
+
+
+<form method="post" class="mt-5 text-center">
+    {% csrf_token %}    
+    <input 
+    type="text" 
+    class="form-control w-50 mx-auto" 
+    name="nome_anuncio" 
+    placeholder="Digite o termo que deseja analisar no buscador">
+
+    <button class="btn btn-success  mt-4">Pesquisar</button>
+
+</form>

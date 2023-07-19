@@ -1,6 +1,8 @@
 from django.shortcuts import render,redirect
+from django.http import HttpResponse
 import requests
 from django.contrib import messages
+import json
 
 # Create your views here.
 
@@ -58,6 +60,7 @@ def analisador_anuncios(request):
             if atributo['id'] == 'BRAND':
                 anuncio_atributos = atributo['value_name']
         anuncio_informacoes = {
+            'id_anuncio'    : anuncio['id'],
             "nome_vendedor" : anuncio_vendedor["nickname"],
             "titulo_produto" : anuncio['title'],
             "marca" : anuncio_atributos,
@@ -88,29 +91,7 @@ def analisador_anuncios(request):
         
         conta_anuncios.append(info_conta)
         anuncios.append(anuncio_informacoes)
-    
-    #conta_anuncios = list()
-    """for id in id_conta_anuncios:
-        info_conta = requests.get(f'https://api.mercadolibre.com/users/{id}').json()
 
-
-        seller_reputation = info_conta['seller_reputation']
-   
-        info_conta = {
-            'vendas' : seller_reputation["transactions"]["total"],
-            'vendas_feitas' : seller_reputation["transactions"]["completed"],
-            'vendas_canceladas' : seller_reputation["transactions"]["canceled"],
-            #'reclamacoes' : '',
-            #'total_anuncios' : '',
-            #'anuncios_fullfitmen' : '',
-            #'anuncios_free_frete' : '',
-            'localizacao' : f'{info_conta["address"]["state"]}-{info_conta["address"]["city"]}',
-            'reputacao' : seller_reputation['level_id'],
-            'nome' : info_conta['nickname'],
-        }
-        
-        conta_anuncios.append(info_conta)
-    """
 
     context['anuncios'] ={
 
@@ -129,7 +110,6 @@ def analisador_anuncios(request):
         nome_vendedor = conta['nome']
         context['contas'][nome_vendedor] = conta
 
-    print(context)
     return render(request, caminho_template, context)
 
 def melhores_palavras(request):
@@ -244,7 +224,6 @@ def melhores_palavras(request):
         
     palavras_ordenadas_final = list()
 
-    print(type(palavras_ordenadas))
     for local in range(0,len(palavras_ordenadas)):
         if local == 50:
             break
@@ -256,4 +235,205 @@ def melhores_palavras(request):
         
             
     return render(request,caminho_template,context)    
+
+def metricas(request):
+
+    def pegar_anuncios(anuncio_a_ser_buscado : str, offset : int):
+        response = requests.get(f'https://api.mercadolibre.com/sites/MLB/search?q={anuncio_a_ser_buscado}&offset={offset}').json()
+        
+        # Pegando o resultado do JSON response. O result são os anúncios, resultados da busca.
+        result = response['results']
+        return result
+    
+    def ordenar_anuncios_por_venda(paginas : dict):
+        anuncios_ordenados = list()
+
+        # Ordenando anúncios
+        for anuncios in paginas.values():
+            for anuncio in anuncios:
+
+                if len(anuncios_ordenados) == 0:
+                    anuncios_ordenados.append(anuncio)
+                    break
+                
+                local_lista = 0 # Referencia a o index atual, onde estamos na iteração.
+
+                for anuncio_ordenado in anuncios_ordenados: # Iterando para encontrar um anuncio com a venda menor que o anuncio atual.
+                    
+                    vendas_anuncio_ordenado = anuncio_ordenado['sold_quantity']
+                    vendas_anuncio = anuncio['sold_quantity']
+
+                    if vendas_anuncio_ordenado <= vendas_anuncio:
+                        anuncios_ordenados.insert(local_lista,anuncio)
+                        local_lista = -1
+                        break
+                        # Inserimos o anuncio no local do anúncio com menos vendas
+
+                    else:
+                        local_lista += 1
+
+                if local_lista != -1:
+                    anuncios_ordenados.append(anuncio)
+
+        return anuncios_ordenados
+
+    def vendas_por_estado(anuncios):
+        anuncios_por_estado = {
+
+        }
+
+        for anuncio in anuncios:
+            estado_anuncio = anuncio['address']['state_name']
+            vendas_anuncio = anuncio['sold_quantity']
+
+
+            # Checando se esse estado já foi criado
+            if not estado_anuncio in anuncios_por_estado:
+                
+                anuncios_por_estado[estado_anuncio] = {
+                    'vendas_do_estado' : vendas_anuncio,
+                }
+                continue
+
+            vendas_estado = anuncios_por_estado[estado_anuncio]['vendas_do_estado'] + vendas_anuncio
+            anuncios_por_estado[estado_anuncio]['vendas_do_estado']  = vendas_estado
+
+        return anuncios_por_estado
+
+    def vendas_por_pagina(paginas : dict):
+
+        vendas_por_cada_pagina = dict()
+
+        for pagina_atual, anuncios in paginas.items():
+
+            for anuncio in anuncios:
+                vendas_anuncios = anuncio['sold_quantity']
+
+                pagina_existe_no_dicionario = True if pagina_atual in vendas_por_cada_pagina else False
+
+                if not pagina_existe_no_dicionario:
+
+                    # Criando página para captura de vendas
+                    vendas_por_cada_pagina[pagina_atual] = {
+                        'vendas_pagina' : vendas_anuncios
+                    }
+                    """
+                    {
+                        'primeira: {
+                            'vendas_pagina : 10
+                        },
+                        'segunda: {
+                            'vendas_pagina : 10
+                        },
+                        'terceira: {
+                            'vendas_pagina : 15
+                        }
+                    }
+                    """
+                    continue
+
+                vendas_por_cada_pagina[pagina_atual]['vendas_pagina'] = vendas_por_cada_pagina[pagina_atual]['vendas_pagina'] + vendas_anuncios
+        return vendas_por_cada_pagina
+
+    def contar_medalhas(anuncios: list):
+
+        contador_medalhas = dict()
+
+        for anuncio in anuncios:
+            reputacao_vendedor = anuncio['seller']['seller_reputation']
+            medalha_vendedor = reputacao_vendedor['power_seller_status']
+            
+            if not medalha_vendedor in contador_medalhas:
+                
+                if not medalha_vendedor:
+                    medalha_vendedor = 'Sem medalha'
+
+                # Criando contagem da medalha
+                contador_medalhas[medalha_vendedor] = {
+                    'repeticoes' : 1
+                }
+                continue
+            
+            # Adicionando uma repetição
+            repeticoes_atual_medalha = contador_medalhas[medalha_vendedor]['repeticoes'] 
+
+            # Adicionando mais uma repetição à repetições antigas.
+            contador_medalhas[medalha_vendedor]['repeticoes'] = repeticoes_atual_medalha + 1
+        
+        return contador_medalhas
+
+
+
+
+
+    if request.method == 'GET':
+        return render(request, 'AnaliseAnuncios/metricas.html')
+    
+    # Caso seja post
+    anuncio_buscado = request.POST.get('nome_anuncio')
+
+    if not anuncio_buscado:
+        messages.add_message(request,messages.INFO, 'É necessário preencher o campo acima')
+        return render(request, 'AnaliseAnuncios/metricas.html')
+    
+    # Criando estruturas de dados para armazenar os anúncios das cinco primeiras páginas
+    result = {}
+    paginas = ('primeira','segunda','terceira','quarta','quinta')
+    offsets = 0 # Variável usada para ignorar anúncios
+
+    for pagina in paginas:
+        response = pegar_anuncios(anuncio_buscado,offsets)
+        
+        # Passando os anúncios da página para um dicionário com a key referente a página.
+        result[pagina] = response
+
+        offsets += 50 # Ignorar + cinquenta primeiros anúncios
+    # Recuperamos os anúncios e agrupamo-os por sua página de origem
+
+    context = {
+        #'cinco_anuncios_mais_estoque_full'  :   None,
+    }
+
+    # Criando a informação dos cinco anúncios com mais venda
+    anuncios_ordenados = ordenar_anuncios_por_venda(result)
+    anuncios = []
+    for anuncio in anuncios_ordenados[0:5]:
+        data_anuncio = {
+            'titulo' : anuncio['title'],
+            'link': anuncio['permalink']
+        }
+        anuncios.append(data_anuncio)
+
+    # Criando a informação vendas por estado
+    vendas_estado = vendas_por_estado(anuncios_ordenados)
+    context['vendas_por_estado'] = vendas_estado
+
+    # Criando vendas por página
+    vendas_pagina = vendas_por_pagina(result)
+    context['vendas_por_pagina'] = vendas_pagina
+
+    # Criando medalhas vendedor
+    medalhas_vendedor = contar_medalhas(anuncios_ordenados)
+
+
+    informacoes = json.dumps(context)
+    while True:
+        if "'" in informacoes:
+            informacoes = informacoes.replace("'", '"')
+        else:
+            break
+    informacoes = json.loads(informacoes)
+
+    context = {
+        'data' : informacoes,
+        'medalha_anuncios' : medalhas_vendedor,
+        'cinco_anuncios_mais_vendas' : anuncios
+    }
+
+    # Fim do algoritimo
+    return render(request, 'AnaliseAnuncios/metricas_dash.html', context)
+    #return render(request, 'AnaliseAnuncios/metricas_dash.html', context)
+    
+def analise_anuncio(request,id_anuncio):
+    return HttpResponse('Teste')
 

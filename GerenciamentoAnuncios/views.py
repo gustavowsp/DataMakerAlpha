@@ -124,7 +124,6 @@ def publicar_anuncios(request):
             produto = get_products(id_anuncio, access_token_conta_principal)
             info_anuncio = produto.get(id_anuncio[0])
 
-            #if 
 
             def crie_saleterms(info_anuncio):
                 sale_terms = (info_anuncio.get('sale_terms'))
@@ -263,8 +262,10 @@ def publicar_anuncios(request):
                 data += ' "video_id" : "' 
                 data += f" {info_anuncio['video_id']}"
                 data += '",'
+            
+            
             data += '''"pictures":[ {"source" :'''
-            data += f'''"{info_anuncio['thumbnail']}'''
+            data += f'''"{info_anuncio['thumbnail']}'''  
             looping = 1
             for foto in fotos:
                 if looping == len(fotos):
@@ -274,8 +275,8 @@ def publicar_anuncios(request):
                     
                 looping += 1
             data += '''" } ],'''
-            
-
+           
+           
             data += '''"attributes":[ '''
             looping = 1
             for atributo in attributes:
@@ -317,3 +318,4 @@ def publicar_anuncios(request):
         messages.add_message(request,messages.SUCCESS, "Seus anúncios foram publicados!")
         return redirect('listar-anuncios')
     return redirect('listar-anuncios')
+

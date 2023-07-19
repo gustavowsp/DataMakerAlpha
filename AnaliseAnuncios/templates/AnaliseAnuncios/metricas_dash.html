@@ -1,0 +1,255 @@
+{%extends 'global/base_blank.html'%}
+{% load static %}
+{% load formatingtext %}
+
+{% block 'title' %}Minhas Contas{% endblock 'title' %} 
+
+{%block 'css'%}
+    <link rel="stylesheet" href="{% static 'global/listagem/css.css' %}">
+    <link rel="stylesheet" href="{% static 'AnaliseAnuncios/metricas.css' %}">
+    
+
+{%endblock 'css'%}
+
+
+{% block 'body' %}
+
+
+    <div class="container-fluid mt-5">
+        {%include 'AnaliseAnuncios/partials/buscador.html'%}
+
+        <div class="row" id="DashBoard">
+
+            <div class="col-4" id="DashHeightFull">
+                <div class="dash">
+                    <h3>Medalhas</h3>
+
+
+                    {% for key,value in medalha_anuncios.items  %}
+                    <div class="medalha">
+
+                        <h6>
+                            {{key}}  <span class="repeticoes">{{value.repeticoes}}</span>
+                        </h6> 
+                        
+                    </div>    
+                    
+                    {% endfor %}
+
+                </div>
+            </div>
+
+            <div class="col-4">
+
+                <div class="row dash w-100">
+
+                    <div class="col-12">
+                        <h3>Top 5 anúncios com mais vendas</h3>
+
+                        <div id="links">
+                            {% for anuncio in cinco_anuncios_mais_vendas  %}
+                            <a href="{{anuncio.link}}">
+                                {{anuncio.titulo}}
+                            </a>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+
+                </div>
+                <div class="row dash">
+                    <div class="col-12">
+                        <h3>Anúncios por Uf</h3>
+                        <canvas id="anuncios_por_uf" width="300px" height="250"></canvas>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-4">
+
+                <div class="row dash">
+
+                    <div class="col-12">
+                        <h3>Top 5 anúncios com mais estoque no Full</h3>
+                        <canvas id="cinco_anuncios_estoquefull" width="300px" height="250px"></canvas>
+
+                    </div>
+                    
+                </div>
+
+                <div class="row dash">
+
+                    <div class="col-12">
+                        <h3>Vendas por página <small>(5 páginas)</small></h3>
+                        <canvas id="vendas_por_pagina" width="300px" height="200px"></canvas>
+                    </div> 
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>    
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+
+        function gerador_cor(qtd=1){
+            var bg_color = []
+            var border_color = []
+
+            for(let i = 0; i < qtd; i++){
+                let r = Math.random() * 255
+                let g = Math.random() * 255
+                let b = Math.random() * 255
+
+                bg_color.push(`rgba(${r},${g},${b}, 0.2)`)
+                border_color.push(`rgba(${r},${g},${b}, 0.5)`)
+            }
+            return [bg_color, border_color]
+        }
+        function htmlDecode(str) {
+            const doc = new DOMParser().parseFromString(str, "text/html");
+            return doc.documentElement.textContent;
+        }
+        function tirar_aspas_simpes(json){
+            var existe_aspas_simples = 1
+
+            var json_sem_aspas = json
+
+            while(existe_aspas_simples != -1){
+                json_sem_aspas=json_sem_aspas.replace("'",'"')
+
+                existe_aspas_simples = json_sem_aspas.indexOf("'")
+            }
+            return json_sem_aspas
+        }
+
+        function recuperar_header(json){
+            
+            var keys = []
+
+            for(var key in json){
+                keys.push(key)
+            }
+
+            return keys
+        }
+        function recuperar_valores(json,key_valor){
+            
+            var valores = []
+
+            for(var key in json){
+                valores.push(json[key][key_valor])
+            }
+
+            return valores
+        }
+
+
+        // Formatando o Json
+        var informacao = '{{data}}'
+        informacao = htmlDecode(informacao)
+        informacao = tirar_aspas_simpes(informacao)
+        var objeto = JSON.parse(informacao)
+
+
+        var objeto_vendas_pagina = objeto['vendas_por_pagina']
+        var objeto_vendas_estado = objeto['vendas_por_estado']
+
+
+
+        // Criando vendas por página
+        const pagina = recuperar_header(objeto_vendas_pagina)
+        const vendas = recuperar_valores(objeto_vendas_pagina,'vendas_pagina')
+        const vendas_por_pagina = document.getElementById('vendas_por_pagina');
+        
+        const bg_color = []
+        const border_color = []
+
+        for(let i = 0; i < 5; i++){
+            cores = gerador_cor()
+            bg_color.push(cores[0])
+            border_color.push(cores[1])
+        }
+
+        new Chart(vendas_por_pagina, {
+          type: 'bar',
+
+          data: {
+            labels: pagina,
+            datasets: [{
+                label: 'Vendas',
+                data: vendas,
+               // backgroundColor: bg_color,
+                //borderColor: border_color,
+
+            //borderWidth: 1
+            }]
+            
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        
+
+        // Criando vendas por estado
+        const estado = recuperar_header(objeto_vendas_estado).slice(0,5)
+        const venda_estado = recuperar_valores(objeto_vendas_estado,'vendas_do_estado').slice(0,5)
+        const vendas_por_estado = document.getElementById('anuncios_por_uf');
+
+
+
+        new Chart(vendas_por_estado, {
+          type: 'bar',
+          data: {
+            labels: estado,
+            datasets: [{
+              label: 'Vendas do Estado',
+              data: vendas,
+//              backgroundColor: bg_color,
+//              borderColor: border_color,
+
+              data: venda_estado,
+              borderWidth: 0
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        
+
+
+      </script>
+
+{% endblock 'body' %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
