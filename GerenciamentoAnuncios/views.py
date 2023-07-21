@@ -5,7 +5,7 @@ import json
 import requests
 
 
-def get_products(ids_produto : int | list, access_token: str):
+def get_products(ids_produto :  list, access_token: str):
     
     """
     Essa função retorna um dicionário com informações do produto
@@ -26,11 +26,37 @@ def get_products(ids_produto : int | list, access_token: str):
 
     return produtos
 
+def pegue_produto(id_produto : int, access_token: str):
+    
+    url = f'https://api.mercadolibre.com/items/{id_produto}?access_token={access_token}'
+    response = requests.get(url=url)
+    response = response.json()
+    
+    return response
+
+def get_descricao(id_produto : int | str, access_token: str):
+    
+    id_produto = str(id_produto)
+    
+    # Enviando requisição para recuperar a descrição
+    url = f'https://api.mercadolibre.com/items/{id_produto}/description?access_token={access_token}'
+    response = requests.get(url=url)
+    
+    descricao = response.json()
+
+    # Recuperando a descrição em si e caso não exista vamos enviar um objeto None
+    try:
+        descricao['status'] 
+        descricao =  None
+    except:
+        descricao = descricao['plain_text'] 
+         
+    return descricao
 
 # Create your views here.
 
 def listar_anuncios_conta_principal(request):
- 
+    
     caminho_template = 'GerenciamentoAnuncios/listagem-anuncios.html'
 
     def get_products_ids(id_acount, access_token):
@@ -93,7 +119,73 @@ def listar_anuncios_conta_principal(request):
 
     return render(request, caminho_template,context)
 
-def publicar_anuncios(request):
+def listar_anuncios_conta_principal_sem_rep(request):
+    
+    caminho_template = 'GerenciamentoAnuncios/listagem-anuncios-sem-rep.html'
+
+    def get_products_ids(id_acount, access_token):
+
+        """
+        Essa função retorna uma LISTA de IDS de anúncios da conta do mercado livre.
+        """
+
+        response = requests.get(f'https://api.mercadolibre.com/users/{id_acount}/items/search?access_token={access_token}')
+        response = response.json()
+
+        # Pegando o id dos anúncios -- Retorna uma lista
+        id_anuncios = response['results']
+        return id_anuncios,access_token
+
+
+    if not request.user.is_authenticated:
+        messages.add_message(request,messages.INFO,'Autentique-se primeiro!')
+        return redirect('login')
+
+    # Pegando a conta principal
+    try:
+        conta_principal = ContaMercado.objects.get(conta_pai_ou_filha=True,owner=request.user)
+    except:
+        messages.add_message(request, messages.INFO, "Selecione uma conta principal primeiro")
+        return redirect('listar-contas')
+    
+    if conta_principal.access_token_inativo():
+            conta_principal.trocar_access_token()
+
+
+    id_conta = conta_principal.id_conta
+    access_token =  conta_principal.access_token
+
+    id_anuncios = get_products_ids(id_conta,access_token)
+
+    produtos = get_products(id_anuncios[0],access_token)
+    context = {
+        'produtos' : {}
+    }
+
+     #Adicionando no dicinário.
+    for produto in produtos.values():
+
+        context['produtos'][produto['id']] = {
+                    'id_produto' : produto['id'],
+                    'titulo_produto' : produto['title'],
+                    'preco' : produto['price'],
+                    'produto_img': produto['thumbnail'],
+                    'estoque': produto['available_quantity'],
+                }
+    
+        # Retornar frete
+    contas_secundarias = ContaMercado.objects.all().filter(conta_ativa=True,owner=request.user)
+    for conta in contas_secundarias:
+        if conta.access_token_inativo():
+            conta.trocar_access_token()
+
+
+
+    return render(request, caminho_template,context)
+
+
+
+"""def publicar_anuncios_(request):
 
     if not request.user.is_authenticated:
         messages.add_message(request,messages.INFO,'Autentique-se primeiro!')
@@ -318,4 +410,495 @@ def publicar_anuncios(request):
         messages.add_message(request,messages.SUCCESS, "Seus anúncios foram publicados!")
         return redirect('listar-anuncios')
     return redirect('listar-anuncios')
+"""
+
+def publicar_anuncios(request):
+    
+
+    def formatar_sales_terms(sales_terms : list):
+
+        sales_terms_formatado = []
+
+        # Apagando campos indesejaveis
+        for termo in sales_terms:
+            del termo['name']
+            del termo['value_id']
+            del termo['value_struct']
+            del termo['values']
+            del termo['value_type']
+
+            sales_terms_formatado.append(termo)
+
+        return sales_terms_formatado
+    
+    def formatar_pictures(pictures : list):
+        
+        pictures_formatadas = []
+
+        for foto in pictures:
+
+            picture = {
+                "source" : foto['url']
+            }
+            
+            pictures_formatadas.append(picture)
+
+        return pictures_formatadas
+
+    def formatar_atributtes(atributos : list):
+
+        atributos_formatados = []
+
+        for atributo in atributos:
+
+            #del atributo['value_id']
+            del atributo['value_struct']
+            del atributo['values']
+            del atributo['attribute_group_id']
+            del atributo['attribute_group_name']
+            del atributo['value_type']
+            del atributo['name']
+
+            atributos_formatados.append(atributo)
+
+        return atributos_formatados
+
+    def formatar_variacoes(variacoes:list):
+
+        variacao_formatada = []
+
+        for variacao in variacoes:
+
+            del variacao['id']
+            del variacao['seller_custom_field']
+            del variacao['catalog_product_id']
+            del variacao['inventory_id']
+            del variacao['item_relations']
+            del variacao['user_product_id']
+
+            # Formatando o cambo de combinação de atributos da variação
+            for combinacao_atributos in variacao['attribute_combinations']:
+
+                del combinacao_atributos['values']
+                del combinacao_atributos['value_type']
+                del combinacao_atributos['value_struct']
+
+            # Formatando o campo de atributos da variação
+            try:
+                atributos = variacao['attributes']
+                atributos = formatar_atributtes(atributos)
+                variacao['attributes'] = atributos
+            except:
+                ...
+
+            variacao_formatada.append(variacao)
+
+        return variacao_formatada
+
+    def str_para_json(string):
+        string_json = json.loads(string)
+
+        return string_json
+
+
+
+    if request.method == 'GET':
+        return redirect('listar-anuncios')
+
+    # Pegando os anúncios que o usuário deseja republicar
+    anuncios = request.POST.get('json')    
+    anuncios = str_para_json(anuncios)
+
+    if not request.user.is_authenticated:
+        messages.add_message(request, messages.INFO,"Faça login primeiro")
+        return redirect('login')
+
+    # Recuperando as contas necessárias para a republicação de anúncios
+    conta_principal_object = ContaMercado.objects.all().filter(
+        conta_pai_ou_filha=True,
+        owner=request.user)[0]
+    
+    # Caso não exista uma conta principal configurada
+    if not conta_principal_object:
+        messages.add_message(request,messages.INFO,'É necessário uma conta principal para utilizar esta ferramenta')
+        return redirect('listar-anuncios')
+    
+    lista_contas_secundarias = ContaMercado.objects.all().filter(
+        conta_pai_ou_filha=False,
+        owner=request.user
+    )
+
+    if not lista_contas_secundarias:
+        messages.add_message(request,messages.INFO,'É necessário ao menos uma conta secundária para utilizar esta ferramenta')
+        return redirect('listar-anuncios')
+
+    if conta_principal_object.access_token_inativo:
+        conta_principal_object.trocar_access_token()
+    
+    for conta_secundaria in lista_contas_secundarias:
+        
+        if conta_secundaria.access_token_inativo:
+            conta_secundaria.trocar_access_token()
+
+    access_token_conta_principal = conta_principal_object.access_token
+
+    for anuncio in anuncios.values():
+
+        # Buscando informações excedentes do anúncio em questão
+        id_anuncio          =   anuncio['id_anuncio']
+        dados_anuncio       =   pegue_produto(id_anuncio,   access_token_conta_principal)
+        descricao_anuncio   =   get_descricao(id_anuncio,   access_token_conta_principal)
+        print('LISTAGEM TIPO ' + anuncio['tipo'])
+        novo_anuncio = {
+            'title'                 :   anuncio['title'],
+            "category_id"           :   dados_anuncio['category_id'],
+            "currency_id"           :   "BRL",
+            "available_quantity"    :   1, #anuncio['stok'],
+            "buying_mode"           :   "buy_it_now",
+            "condition"             :   anuncio['condition'],
+            "listing_type_id"       :   anuncio['tipo'],
+            "sale_terms"            :   formatar_sales_terms(dados_anuncio['sale_terms']),
+            "pictures"              :   formatar_pictures(dados_anuncio['pictures']),
+            "attributes"            :   formatar_atributtes(dados_anuncio['attributes']),
+            
+        }
+
+        if dados_anuncio['variations']:
+            novo_anuncio['variations']  =   formatar_variacoes(dados_anuncio['variations'])   
+
+        # Verificando se existe preço
+        try: 
+            int(anuncio['price'])
+            novo_anuncio['price'] = anuncio['price']
+        except:
+            novo_anuncio['price'] = dados_anuncio["price"]
+
+        for atributo in novo_anuncio['attributes']:
+
+            condicoes_produto = {
+                'used'          :   'Usado' ,
+                'new'           :   'Novo' ,
+                'recondicioned' :   'Recondicionado',
+
+            }
+            
+            condicao_produto = condicoes_produto[novo_anuncio["condition"]]
+
+            # Caso o atributo ITEM_CONDITION seja recondicionado e a condição do item não seja
+            # Vamos alterar a condição do item para recondicionado.
+            if atributo['value_name'] != condicao_produto and atributo['id'] == "ITEM_CONDITION":
+                
+                # Mudando a condição do item para recondicionado   
+                novo_anuncio['condition'] = 'recondicioned'       
+
+        # Transformando o novo anuncio em json
+        novo_anuncio = json.dumps(novo_anuncio)
+        novo_anuncio = json.loads(novo_anuncio)
+        novo_anuncio = str(novo_anuncio).encode()
+
+        # Postando o anúncio
+        for conta_secundaria in lista_contas_secundarias:
+                
+                access_token_conta_secundaria = conta_secundaria.access_token
+                
+                headers = {
+                'Authorization': f'Bearer {access_token_conta_secundaria}',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                }
+                response = requests.post('https://api.mercadolibre.com/items', headers=headers, data=novo_anuncio)
+            
+
+                # Caso conseguigamos postar o anúncio
+                if not '40' in str(response):
+
+                    id_novo_anuncio = response.json()['id']
+
+                    if not anuncio['descricao']:
+                        descricao_novo_anuncio = {
+                            "plain_text" : descricao_anuncio
+                        }
+                    else:
+                        descricao_novo_anuncio = {
+                            "plain_text" : anuncio['descricao']
+                        }
+                    descricao_novo_anuncio = json.dumps(descricao_novo_anuncio)
+                    descricao_novo_anuncio = json.loads(descricao_novo_anuncio)
+                    descricao_novo_anuncio = str(descricao_novo_anuncio).encode()
+
+                    response = requests.post(
+                        f'https://api.mercadolibre.com/items/{id_novo_anuncio}/description',
+                        headers=headers,
+                        data = descricao_novo_anuncio
+                        )
+
+            
+
+    return redirect('listar-anuncios')
+
+def publicar_anuncios_sem_repeticao(request):
+    
+
+    def formatar_sales_terms(sales_terms : list):
+
+        sales_terms_formatado = []
+
+        # Apagando campos indesejaveis
+        for termo in sales_terms:
+            del termo['name']
+            del termo['value_id']
+            del termo['value_struct']
+            del termo['values']
+            del termo['value_type']
+
+            sales_terms_formatado.append(termo)
+
+        return sales_terms_formatado
+    
+    def formatar_pictures(pictures : list):
+        
+        pictures_formatadas = []
+
+        for foto in pictures:
+
+            picture = {
+                "source" : foto['url']
+            }
+            
+            pictures_formatadas.append(picture)
+
+        return pictures_formatadas
+
+    def formatar_atributtes(atributos : list):
+
+        atributos_formatados = []
+
+        for atributo in atributos:
+
+            #del atributo['value_id']
+            del atributo['value_struct']
+            del atributo['values']
+            del atributo['attribute_group_id']
+            del atributo['attribute_group_name']
+            del atributo['value_type']
+            del atributo['name']
+
+            atributos_formatados.append(atributo)
+
+        return atributos_formatados
+
+    def formatar_variacoes(variacoes:list):
+
+        variacao_formatada = []
+
+        for variacao in variacoes:
+
+            del variacao['id']
+            del variacao['seller_custom_field']
+            del variacao['catalog_product_id']
+            del variacao['inventory_id']
+            del variacao['item_relations']
+            del variacao['user_product_id']
+
+            # Formatando o cambo de combinação de atributos da variação
+            for combinacao_atributos in variacao['attribute_combinations']:
+
+                del combinacao_atributos['values']
+                del combinacao_atributos['value_type']
+                del combinacao_atributos['value_struct']
+
+            # Formatando o campo de atributos da variação
+            try:
+                atributos = variacao['attributes']
+                atributos = formatar_atributtes(atributos)
+                variacao['attributes'] = atributos
+            except:
+                ...
+
+            variacao_formatada.append(variacao)
+
+        return variacao_formatada
+
+    def str_para_json(string):
+        string_json = json.loads(string)
+
+        return string_json
+
+    def pegue_meu_id(access_token):
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+        }
+
+        response = requests.get('https://api.mercadolibre.com/users/me', headers=headers)
+        response = response.json()
+        id_conta = response['id']
+
+        return id_conta
+
+    def pegar_nome_anuncios(access_token,id_vendedor):
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+        }
+        response = requests.get(f'https://api.mercadolibre.com/sites/MLB/search?seller_id={id_vendedor}',headers=headers).json()
+        response = response['results']
+        anuncios = []
+        
+        for resultado in response:
+            anuncios.append(resultado['title'])
+
+        return anuncios
+
+    if request.method == 'GET':
+        return redirect('listar-anuncios')
+
+    # Pegando os anúncios que o usuário deseja republicar
+    anuncios = request.POST.get('json')    
+    anuncios = str_para_json(anuncios)
+
+    if not request.user.is_authenticated:
+        messages.add_message(request, messages.INFO,"Faça login primeiro")
+        return redirect('login')
+
+    # Recuperando as contas necessárias para a republicação de anúncios
+    conta_principal_object = ContaMercado.objects.all().filter(
+        conta_pai_ou_filha=True,
+        owner=request.user)[0]
+    
+    # Caso não exista uma conta principal configurada
+    if not conta_principal_object:
+        messages.add_message(request,messages.INFO,'É necessário uma conta principal para utilizar esta ferramenta')
+        return redirect('listar-anuncios')
+    
+    lista_contas_secundarias = ContaMercado.objects.all().filter(
+        conta_pai_ou_filha=False,
+        owner=request.user
+    )
+
+    if not lista_contas_secundarias:
+        messages.add_message(request,messages.INFO,'É necessário ao menos uma conta secundária para utilizar esta ferramenta')
+        return redirect('listar-anuncios')
+
+    if conta_principal_object.access_token_inativo:
+        conta_principal_object.trocar_access_token()
+    
+    # Criando dicionário que vai guardar todos os nomes de anúncios
+    nome_de_todos_anuncios_contas = {}
+
+    for conta_secundaria in lista_contas_secundarias:
+        
+        if conta_secundaria.access_token_inativo:
+            conta_secundaria.trocar_access_token()
+
+        # Buscando todos os nomes de anúncios
+        id_vendedor = pegue_meu_id(conta_secundaria.access_token)
+        nome_anuncios = pegar_nome_anuncios(conta_secundaria.access_token,id_vendedor)
+        
+        nome_de_todos_anuncios_contas[conta_secundaria.access_token] = nome_anuncios
+
+    access_token_conta_principal = conta_principal_object.access_token
+
+    for anuncio in anuncios.values():
+    
+
+        # Buscando informações excedentes do anúncio em questão
+        id_anuncio          =   anuncio['id_anuncio']
+        dados_anuncio       =   pegue_produto(id_anuncio,   access_token_conta_principal)
+        descricao_anuncio   =   get_descricao(id_anuncio,   access_token_conta_principal)
+
+        novo_anuncio = {
+            'title'                 :   anuncio['title'],
+            "category_id"           :   dados_anuncio['category_id'],
+            "currency_id"           :   "BRL",
+            "available_quantity"    :   1, #anuncio['stok'],
+            "buying_mode"           :   "buy_it_now",
+            "condition"             :   anuncio['condition'],
+            "listing_type_id"       :   anuncio['tipo'],
+            "sale_terms"            :   formatar_sales_terms(dados_anuncio['sale_terms']),
+            "pictures"              :   formatar_pictures(dados_anuncio['pictures']),
+            "attributes"            :   formatar_atributtes(dados_anuncio['attributes']),
+            
+        }
+
+        if dados_anuncio['variations']:
+            novo_anuncio['variations']  =   formatar_variacoes(dados_anuncio['variations'])   
+
+        # Verificando se existe preço
+        try: 
+            int(anuncio['price'])
+            novo_anuncio['price'] = anuncio['price']
+        except:
+            novo_anuncio['price'] = dados_anuncio["price"]
+
+        for atributo in novo_anuncio['attributes']:
+
+            condicoes_produto = {
+                'used'          :   'Usado' ,
+                'new'           :   'Novo' ,
+                'recondicioned' :   'Recondicionado',
+
+            }
+            
+            condicao_produto = condicoes_produto[novo_anuncio["condition"]]
+
+            # Caso o atributo ITEM_CONDITION seja recondicionado e a condição do item não seja
+            # Vamos alterar a condição do item para recondicionado.
+            if atributo['value_name'] != condicao_produto and atributo['id'] == "ITEM_CONDITION":
+                
+                # Mudando a condição do item para recondicionado   
+                novo_anuncio['condition'] = 'recondicioned'       
+
+        # Transformando o novo anuncio em json
+        novo_anuncio = json.dumps(novo_anuncio)
+        novo_anuncio = json.loads(novo_anuncio)
+        novo_anuncio = str(novo_anuncio).encode()
+
+        # Postando o anúncio
+        for conta_secundaria in lista_contas_secundarias:
+                
+                # Checando se anúncio já existe na conta atual
+                if anuncio['title'] in nome_de_todos_anuncios_contas[conta_secundaria.access_token]:
+                    print(f'Não vou republicar o anúncio{anuncio["title"]}')
+                    continue
+
+                access_token_conta_secundaria = conta_secundaria.access_token
+                print( nome_de_todos_anuncios_contas[conta_secundaria.access_token])
+                
+                #continue
+
+                headers = {
+                'Authorization': f'Bearer {access_token_conta_secundaria}',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                }
+                continue
+
+                response = requests.post('https://api.mercadolibre.com/items', headers=headers, data=novo_anuncio)
+            
+
+                # Caso conseguigamos postar o anúncio
+                if not '40' in str(response):
+
+                    id_novo_anuncio = response.json()['id']
+                    
+                    if not anuncio['descricao']:
+                        descricao_novo_anuncio = {
+                            "plain_text" : descricao_anuncio
+                        }
+                    else:
+                        descricao_novo_anuncio = {
+                            "plain_text" : anuncio['descricao']
+                        }
+                        
+                    descricao_novo_anuncio = json.dumps(descricao_novo_anuncio)
+                    descricao_novo_anuncio = json.loads(descricao_novo_anuncio)
+                    descricao_novo_anuncio = str(descricao_novo_anuncio).encode()
+
+                    response = requests.post(
+                        f'https://api.mercadolibre.com/items/{id_novo_anuncio}/description',
+                        headers=headers,
+                        data = descricao_novo_anuncio
+                        )
+
+            
+
+    return redirect('listar-anuncios-sem-rep')
+
 

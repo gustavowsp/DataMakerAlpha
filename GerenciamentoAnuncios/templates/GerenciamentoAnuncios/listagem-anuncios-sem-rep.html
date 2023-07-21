@@ -1,0 +1,156 @@
+{%extends 'global/base_blank.html'%}
+{% load static %}
+{% load formatingtext %}
+
+{% block 'title' %}Minhas Contas{% endblock 'title' %} 
+
+{%block 'css'%}
+    <link rel="stylesheet" href="{% static 'GerenciamentoAnuncios/anuncios.css' %}">
+    <link rel="stylesheet" href="{% static 'global/listagem/css.css' %}">
+    <script src="{% static 'GerenciamentoAnuncios/criandojson.js' %}"></script>
+
+{%endblock 'css'%}
+
+
+{% block 'body' %}
+
+    
+    
+<div class="container" id="Contas">
+
+    {% if produtos %}
+      <h1>Anúncios Republicar</h1>
+      {% include  'global/partials/_message.html' %}
+      {% for anuncio in produtos.values %}
+      <div class="contaml">
+
+        <header class="info-produto">
+          <table>
+      
+            <tbody>
+              <tr>
+
+                <td id="imagem-anuncio">
+                  <div class="imagem-anuncio">
+                    <img src="{{anuncio.produto_img}}" alt="">
+                  </div>
+                </td>
+                
+                <td id="nome-anuncio">
+                  <h4 class="">{{anuncio.titulo_produto}}</h4>
+                </td>            
+                
+                <td id="id_anuncio">
+                  <h4 class="d-md-block d-none">{{anuncio.id_produto}}</h4>
+                </td>
+
+                <td>
+                  <button onclick="nao_postar('{{anuncio.id_produto}}')" id="{{anuncio.id_produto}}" class="btn btn-sm {{anuncio.id_produto}} ativo">Não publicar</button>
+                </td>
+              </tr>
+            </tbody>
+
+          </table>
+        </header>
+        
+        
+        <hr>
+
+
+        <div class="alteracao-info-produto">
+
+          <div class="form-group caixa-alteracao-info" >
+
+            <div class="label primeira-alteracao">
+              <h6>Título</h6>
+              <input 
+              type="text" name="title" 
+              id="{{anuncio.id_produto}}" class="form-control {{anuncio.id_produto}} ativo" 
+              placeholder="Título do produto..." value="{{anuncio.titulo_produto}}">
+            </div>
+
+            <div class="label segundo-input">
+              <h6>Preço do produto</h6>
+              <input 
+              type="number" name="price" 
+              id="{{anuncio.id_produto}}" class="form-control {{anuncio.id_produto}} ativo" 
+              placeholder="Preço do produto..." value="{{anuncio.preco}}">
+            </div>
+
+            <div class="label terceiro-input">
+              <h6>Condição do produto</h6>
+              <select name="condition" id="{{anuncio.id_produto}}" class="form-control {{anuncio.id_produto}} ativo">
+                <option value="used">Usado</option>
+                <option value="new">Novo</option>
+              </select>
+          
+            </div>
+          
+          </div>
+          <div class="form-group caixa-alteracao-info" >
+
+            <div class="label primeira-alteracao">
+              <h6>Frete</h6>
+              <select  name="frete" id="{{anuncio.id_produto}}" class="form-control {{anuncio.id_produto}} ativo">
+                <option value="frete_free">Frete grátis</option>
+                <option value="frete_pay">Frete pago</option>
+              </select>              
+            </div>
+
+            <div class="label segundo-input">
+                <h6>Tipo de publicação</h6>
+                <select name="tipo" id="{{anuncio.id_produto}}" class="form-control {{anuncio.id_produto}} ativo">
+                  <option value="free">Grátis</option>
+                  <option value="bronze">Bronze</option>
+                  <option value="silver">Prata</option>
+                  <option value="gold">Ouro</option>
+                  <option value="gold_special">Clássico</option>
+                  <option value="gold_premium">Diamante</option>
+                  <option value="gold_pro">Premium</option>
+                </select>    
+                <input class="d-none {{anuncio.id_produto}} ativo" name="id_anuncio" id="{{anuncio.id_produto}}" value="{{anuncio.id_produto}}">
+            </div>
+
+            <div class="label terceiro-input">
+                <h6>Estoque do produto</h6>
+                <input type="number" id="{{anuncio.id_produto}}" value="{{anuncio.estoque}}" name="stok" class="form-control {{anuncio.id_produto}} ativo" placeholder="Preço do produto..">
+            </div>
+          
+          </div>
+
+          <div class="form-group caixa-alteracao-info">
+            <textarea name="descricao" id="{{anuncio.id_produto}}" class="{{anuncio.id_produto}} ativo"></textarea>
+          </div>
+        </div>
+
+        
+
+      </div>
+
+      {%endfor%}
+      <form method="post" action="{% url 'publicador-sem_repeticao' %}">
+        {% csrf_token %}
+        <button class="btn btn-success btn-block" name="json" id="json" value="" onclick="criando_json()"> Envie</button>
+      </form>
+    {% else %}
+    <h1>A conta principal escolhida não possui anúncios para serem copiados</h1>
+    <a href="{%url 'listar-contas' %}" class="btn btn-info btn-sm">Mudar a conta principal</a>
+      
+    {%endif%}
+{% endblock 'body' %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

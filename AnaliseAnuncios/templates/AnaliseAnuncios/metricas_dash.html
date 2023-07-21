@@ -73,7 +73,14 @@
 
                     <div class="col-12">
                         <h3>Top 5 anúncios com mais estoque no Full</h3>
-                        <canvas id="cinco_anuncios_estoquefull" width="300px" height="250px"></canvas>
+                        <div id="links">
+                            {% for anuncio in anuncios_full_ordenados  %}
+                            <a href="{{anuncio.link}}">
+                                {{anuncio.titulo}}
+                            </a>
+                            {% endfor %}
+                        </div>
+
 
                     </div>
                     

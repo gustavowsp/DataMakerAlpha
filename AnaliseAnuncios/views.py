@@ -1,17 +1,15 @@
 from django.shortcuts import render,redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 import requests
 from django.contrib import messages
 import json
+from datetime import datetime
 
 # Create your views here.
-
 def analisador_anuncios(request):
 
     caminho_template = 'AnaliseAnuncios/analiseanuncios.html'
-    caminhos_css = ['AnaliseAnuncios/buscador.css',]
     context = {
-        'caminho_css' : caminhos_css
     }
 
 
@@ -25,7 +23,6 @@ def analisador_anuncios(request):
     metodo_requisicao = request.method
 
     if metodo_requisicao != 'POST':
-        print(context)
         return render(request, caminho_template,context)
     
     nome_anuncio = request.POST.get('anuncio')
@@ -276,6 +273,39 @@ def metricas(request):
                     anuncios_ordenados.append(anuncio)
 
         return anuncios_ordenados
+    
+    def ordenar_anuncios_estoque(anuncios : list):
+        anuncios_ordenados = list()
+
+        # Ordenando anúncios
+        for anuncio in anuncios:
+                        
+
+            if len(anuncios_ordenados) == 0:
+                anuncios_ordenados.append(anuncio)
+                continue
+            
+            local_lista = 0 # Referencia a o index atual, onde estamos na iteração.
+
+            for anuncio_ordenado in anuncios_ordenados: # Iterando para encontrar um anuncio com a venda menor que o anuncio atual.
+                
+                estoque_anuncio_ordenado = anuncio_ordenado['available_quantity']
+                
+                estoque_anuncio = anuncio['available_quantity']
+
+                if estoque_anuncio_ordenado <= estoque_anuncio:
+                    anuncios_ordenados.insert(local_lista,anuncio)
+                    local_lista = -1
+                    break
+                    # Inserimos o anuncio no local do anúncio com menos vendas
+
+                else:
+                    local_lista += 1
+
+            if local_lista != -1:
+                anuncios_ordenados.append(anuncio)
+
+        return anuncios_ordenados
 
     def vendas_por_estado(anuncios):
         anuncios_por_estado = {
@@ -361,8 +391,18 @@ def metricas(request):
             contador_medalhas[medalha_vendedor]['repeticoes'] = repeticoes_atual_medalha + 1
         
         return contador_medalhas
-
-
+    
+    def recuperar_anuncios_full(anuncios):
+        
+        anuncios_full = list()
+        
+        for anuncio in anuncios:
+            
+            anuncio_tipo_logistica = anuncio['shipping']['logistic_type']
+            
+            if anuncio_tipo_logistica == 'fulfillment':
+                anuncios_full.append(anuncio)
+        return anuncios_full
 
 
 
@@ -412,6 +452,17 @@ def metricas(request):
     vendas_pagina = vendas_por_pagina(result)
     context['vendas_por_pagina'] = vendas_pagina
 
+    #Criando top cinco anúncios full com mais estoque
+    anuncios_full = recuperar_anuncios_full(anuncios_ordenados)
+    anuncios_full_ordenados = ordenar_anuncios_estoque(anuncios_full)
+    anuncios_full = []
+    for anuncio in anuncios_full_ordenados[0:5]:
+        data_anuncio = {
+            'titulo' : anuncio['title'],
+            'link': anuncio['permalink']
+        }
+        anuncios_full.append(data_anuncio)
+
     # Criando medalhas vendedor
     medalhas_vendedor = contar_medalhas(anuncios_ordenados)
 
@@ -424,10 +475,13 @@ def metricas(request):
             break
     informacoes = json.loads(informacoes)
 
+    print(anuncios_full_ordenados)
+
     context = {
         'data' : informacoes,
         'medalha_anuncios' : medalhas_vendedor,
-        'cinco_anuncios_mais_vendas' : anuncios
+        'cinco_anuncios_mais_vendas' : anuncios,
+        'anuncios_full_ordenados'   :anuncios_full
     }
 
     # Fim do algoritimo
@@ -435,5 +489,78 @@ def metricas(request):
     #return render(request, 'AnaliseAnuncios/metricas_dash.html', context)
     
 def analise_anuncio(request,id_anuncio):
-    return HttpResponse('Teste')
+    
+    def pegar_produto(id_produto):
+        url = f'https://api.mercadolibre.com/items/{id_produto}'
+        response = requests.get(url=url)
+        return response.json()
+
+    def gerar_data(data):
+
+        # Formatando a data para recuperação de seus dados
+        data = data.replace('-',' ').replace('T',' ').split()
+
+        ano = int(data[0])
+        mes = int(data[1])
+        dia = int(data[2])   
+
+        data_object = datetime(year=ano,month=mes,day=dia)
+        return data_object
+
+    def comissao(preco,tipo_publicacao):
+
+        tipo_listagens = {
+            'gold_pro'      :   19,
+            'gold_premium'  :   16,
+            'gold_special'  :   13,
+            'gold'          :   10,
+            'silver'        :   7,
+            'bronze'        :   4,
+            'free'          :   0,
+        }
+
+        porcentagem_comissao = tipo_listagens[tipo_publicacao]
+        
+        comissao_mercado = preco * (porcentagem_comissao/100)
+
+        return f'{comissao_mercado:.2f}'
+
+    data_anuncio = pegar_produto(id_anuncio)
+    
+    # Checando se a requisição obteve sucesso
+    if data_anuncio['status'] == 404:
+        raise Http404('Esse anúncio não existe')
+
+
+    # Criando a informação 'data da última atualização'.
+    data_ultima_atualizacao = gerar_data(data_anuncio['last_updated']) 
+
+
+    # Criando informação 'tempo passado desde a criação do anúncio'.
+    data_criacao = gerar_data(data_anuncio['date_created'])
+    data_atual  = datetime.now()
+    
+    tempo_passado_criacao_anuncio = data_atual- data_criacao 
+
+
+    # Informação valor recebido pelo vendedor e comissão mercado livre criado
+    preco_produto = data_anuncio['price'] 
+    tipo_listagem = data_anuncio['listing_type_id']
+
+    comissao_mercado = comissao(preco_produto,tipo_listagem)
+    valor_ganho_vendedor = int(preco_produto) - float(comissao_mercado)
+
+    context = {
+        'valor_ganho_vendedor'          :   valor_ganho_vendedor,
+        'tempo_passado_criacao_anuncio' :   tempo_passado_criacao_anuncio,
+        'data_ultima_atualizacao'       :   data_ultima_atualizacao,
+        'comissao_mercado'              :   comissao_mercado
+    }
+
+
+
+    return render(
+        request,
+        'AnaliseAnuncios/analise_anuncio.html',
+        context)
 

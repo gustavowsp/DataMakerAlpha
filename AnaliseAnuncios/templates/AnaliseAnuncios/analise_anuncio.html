@@ -1,0 +1,35 @@
+{%extends 'global/base_blank.html'%}
+{% load static %}
+
+{% block 'title' %}Analise de um anúncio{% endblock 'title' %} 
+
+{%block 'css'%}
+
+    <link rel="stylesheet" href="{% static 'global/listagem/css.css' %}">
+
+{%endblock 'css'%}
+
+
+{% block 'body' %}
+
+{{valor_ganho_vendedor}}
+<br>
+{{tempo_passado_criacao_anuncio}}
+<br>
+{{data_ultima_atualizacao}}
+<br>
+{{comissao_mercado}}
+    
+
+{% endblock 'body' %}
+
+
+
+
+
+
+
+
+
+
+
